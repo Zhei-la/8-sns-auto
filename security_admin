@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>보안 관리</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0d0d0d;--bg2:#161616;--bg3:#1e1e1e;
+  --red:#ff5252;--green:#00e676;--yellow:#ffd740;
+  --text:#e0e0e0;--dim:#666;--border:#222;
+  --r:10px;
+}
+body{background:var(--bg);color:var(--text);font-family:'Malgun Gothic',sans-serif;min-height:100vh;}
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:40px;width:340px;text-align:center;}
+.login-box h2{font-size:18px;font-weight:700;color:var(--red);margin-bottom:24px;}
+.login-box input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px;outline:none;margin-bottom:12px;}
+.login-box button{width:100%;background:var(--red);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;}
+.err-msg{color:var(--red);font-size:12px;margin-top:8px;}
+.dashboard{display:none;max-width:900px;margin:0 auto;padding:32px 20px;}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+.header h1{font-size:20px;font-weight:700;color:var(--red);}
+.logout-btn{background:transparent;border:1px solid var(--border);color:var(--dim);padding:6px 16px;border-radius:6px;cursor:pointer;font-size:12px;}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:20px;text-align:center;}
+.stat-val{font-size:32px;font-weight:700;margin-bottom:4px;}
+.stat-lbl{font-size:12px;color:var(--dim);}
+.red{color:var(--red);}
+.green{color:var(--green);}
+.yellow{color:var(--yellow);}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px;}
+.card-title{font-size:14px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
+.badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:400;}
+.badge-red{background:rgba(255,82,82,0.15);color:var(--red);}
+.badge-green{background:rgba(0,230,118,0.15);color:var(--green);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:8px 12px;color:var(--dim);font-weight:400;border-bottom:1px solid var(--border);font-size:12px;}
+td{padding:10px 12px;border-bottom:1px solid #1a1a1a;}
+tr:last-child td{border:none;}
+.ip-text{font-family:monospace;color:var(--yellow);}
+.unblock-btn{background:transparent;border:1px solid var(--green);color:var(--green);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:11px;}
+.unblock-btn:hover{background:rgba(0,230,118,0.1);}
+.block-btn{background:transparent;border:1px solid var(--red);color:var(--red);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:11px;}
+.input-row{display:flex;gap:8px;margin-bottom:12px;}
+.input-row input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;font-family:monospace;}
+.input-row button{background:var(--red);color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:700;white-space:nowrap;}
+.empty{text-align:center;padding:32px;color:var(--dim);font-size:13px;}
+.refresh-btn{background:transparent;border:1px solid var(--border);color:var(--dim);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;}
+.refresh-btn:hover{border-color:var(--green);color:var(--green);}
+</style>
+</head>
+<body>
+<div class="login-wrap" id="loginWrap">
+  <div class="login-box">
+    <h2>🚨 보안 관리</h2>
+    <input type="password" id="loginPw" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button onclick="doLogin()">로그인</button>
+    <div class="err-msg" id="loginErr"></div>
+  </div>
+</div>
+<div class="dashboard" id="dashboard">
+  <div class="header">
+    <h1>🚨 보안 관리 센터</h1>
+    <div style="display:flex;gap:8px;">
+      <button class="refresh-btn" onclick="loadAll()">🔄 새로고침</button>
+      <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+    </div>
+  </div>
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-val red" id="stat-blocked">-</div>
+      <div class="stat-lbl">차단된 IP</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val yellow" id="stat-requests">-</div>
+      <div class="stat-lbl">오늘 요청 수</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val green" id="stat-status">-</div>
+      <div class="stat-lbl">시스템 상태</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">
+      🚫 차단된 IP 목록
+      <span class="badge badge-red" id="blocked-count">0개</span>
+    </div>
+    <div class="input-row">
+      <input type="text" id="manualIp" placeholder="차단할 IP 직접 입력 (예: 192.168.1.1)" />
+      <button onclick="blockIP()">차단 추가</button>
+    </div>
+    <table>
+      <thead><tr><th>IP 주소</th><th>차단 사유</th><th>차단 시각</th><th>액션</th></tr></thead>
+      <tbody id="blockedTable"></tbody>
+    </table>
+    <div class="empty" id="blockedEmpty" style="display:none;">차단된 IP가 없습니다 ✅</div>
+  </div>
+  <div class="card">
+    <div class="card-title">
+      📋 보안 이벤트 로그
+      <span class="badge badge-red" id="log-count">0건</span>
+    </div>
+    <table>
+      <thead><tr><th>시각</th><th>IP</th><th>유형</th><th>내용</th></tr></thead>
+      <tbody id="logTable"></tbody>
+    </table>
+    <div class="empty" id="logEmpty" style="display:none;">보안 이벤트가 없습니다 ✅</div>
+  </div>
+</div>
+<script>
+let token='';
+async function doLogin(){
+  const pw=document.getElementById('loginPw').value;
+  const res=await fetch('/api/security/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+  const data=await res.json();
+  if(data.success){
+    token=data.token;
+    document.getElementById('loginWrap').style.display='none';
+    document.getElementById('dashboard').style.display='block';
+    loadAll();
+  } else {
+    document.getElementById('loginErr').textContent='비밀번호가 틀렸어요';
+  }
+}
+function doLogout(){
+  token='';
+  document.getElementById('loginWrap').style.display='flex';
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('loginPw').value='';
+}
+async function loadAll(){
+  const res=await fetch('/api/security/admin',{headers:{'X-Admin-Token':token}});
+  const data=await res.json();
+  if(!data.success){doLogout();return;}
+  document.getElementById('stat-blocked').textContent=data.blocked_count;
+  document.getElementById('stat-requests').textContent=data.total_requests;
+  document.getElementById('stat-status').textContent=data.blocked_count>0?'경고':'정상';
+  document.getElementById('stat-status').className='stat-val '+(data.blocked_count>0?'yellow':'green');
+  const blocked=data.blocked_ips||[];
+  document.getElementById('blocked-count').textContent=blocked.length+'개';
+  const tbody=document.getElementById('blockedTable');
+  if(blocked.length===0){tbody.innerHTML='';document.getElementById('blockedEmpty').style.display='block';}
+  else{
+    document.getElementById('blockedEmpty').style.display='none';
+    tbody.innerHTML=blocked.map(b=>`<tr><td><span class="ip-text">${b.ip}</span></td><td>${b.reason||'수동 차단'}</td><td style="color:var(--dim);font-size:12px;">${b.time||'-'}</td><td><button class="unblock-btn" onclick="unblockIP('${b.ip}')">차단 해제</button></td></tr>`).join('');
+  }
+  const logs=data.security_logs||[];
+  document.getElementById('log-count').textContent=logs.length+'건';
+  const logTbody=document.getElementById('logTable');
+  if(logs.length===0){logTbody.innerHTML='';document.getElementById('logEmpty').style.display='block';}
+  else{
+    document.getElementById('logEmpty').style.display='none';
+    logTbody.innerHTML=logs.slice(-50).reverse().map(l=>`<tr><td style="color:var(--dim);font-size:12px;">${l.time}</td><td><span class="ip-text">${l.ip}</span></td><td><span class="badge badge-red">${l.type}</span></td><td style="font-size:12px;">${l.detail}</td></tr>`).join('');
+  }
+}
+async function unblockIP(ip){
+  await fetch('/api/security/unblock',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Token':token},body:JSON.stringify({ip})});
+  loadAll();
+}
+async function blockIP(){
+  const ip=document.getElementById('manualIp').value.trim();
+  if(!ip)return;
+  await fetch('/api/security/block',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Token':token},body:JSON.stringify({ip,reason:'수동 차단'})});
+  document.getElementById('manualIp').value='';
+  loadAll();
+}
+</script>
+</body>
+</html>

@@ -570,6 +570,25 @@ async function searchPlace(){
   btn.disabled = false;
 }
 
+function cpAllTitles(p,btn){
+  const titles=[...document.querySelectorAll(`#titles-${p} .ttxt`)].map(t=>t.textContent).join('\n');
+  const o=btn.textContent;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(titles).then(()=>{btn.textContent='복사 완료!';setTimeout(()=>{btn.textContent=o},1500);}).catch(()=>{fallbackCopy(titles);btn.textContent='복사 완료!';setTimeout(()=>{btn.textContent=o},1500);});
+  } else {fallbackCopy(titles);btn.textContent='복사 완료!';setTimeout(()=>{btn.textContent=o},1500);}
+}
+
+function cpAllContent(p,btn){
+  const titles=[...document.querySelectorAll(`#titles-${p} .ttxt`)].map((t,i)=>`${i+1}. ${t.textContent}`).join('\n');
+  const body=document.getElementById('box-'+p).textContent;
+  const kw=document.getElementById('kw-'+p)?.textContent||'';
+  const text=`[제목 후보]\n${titles}\n\n${body}${kw?'\n\n[키워드]\n'+kw:''}`;
+  const o=btn.textContent;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>{btn.textContent='복사 완료!';setTimeout(()=>{btn.textContent=o},1500);}).catch(()=>{fallbackCopy(text);btn.textContent='복사 완료!';setTimeout(()=>{btn.textContent=o},1500);});
+  } else {fallbackCopy(text);btn.textContent='복사 완료!';setTimeout(()=>{btn.textContent=o},1500);}
+}
+
 function cpInline(text,btn){
   const o=btn.textContent;
   if(navigator.clipboard&&navigator.clipboard.writeText){
@@ -680,27 +699,28 @@ function buildPrompt(p,info){
 - 읽다 이탈 안 되게 궁금증·공감 요소 중간중간 삽입
 - 광고·법률위반·플랫폼 제재 표현 절대 금지
 
-━━━ 출력 구조 (반드시 이 순서) ━━━
-제목 추천
+━━━ 출력 형식 (마커 그대로 사용, 절대 변경 금지) ━━━
+[TITLES]
 1. 제목1
+점수: X.X
 2. 제목2
+점수: X.X
 3. 제목3
+점수: X.X
 4. 제목4
+점수: X.X
 5. 제목5
+점수: X.X
 
-[본문 시작]
-(도입 후킹 → 방문계기 → 메뉴/맛/특징 → 분위기 → 개인느낌 → 핵심정보)
+(점수는 클릭율·후킹력·SEO 종합 10점 만점)
 
-가게 정보
-위치 - {주소}
-영업시간 - {영업시간}
-전화번호 - {전화번호}
-주차장 있음!
+[BODY]
+(도입 후킹 → 방문계기 → 메뉴/맛/특징 → 분위기 → 개인느낌 → 핵심정보 → 가게정보 → 마무리)
 
-마무리
-
-키워드 추천
-(10개 이상, 지역+키워드 조합, 실제 검색할 법한 형태)
+[KEYWORDS]
+키워드1
+키워드2
+(10개 이상, 지역+키워드 조합)
 
 매장명: ${info.keyword}
 플레이스 링크: ${info.place||'없음'}
@@ -886,8 +906,10 @@ async function generateAll(){
             <div id="titles-${p}"></div>
           </div>
           <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <button class="copy-btn" onclick="cpAllTitles('${p}',this)" style="flex:1">제목 복사</button>
             <button class="copy-btn" onclick="cpText('box-${p}',this)" style="flex:1">본문 복사</button>
             <button class="copy-btn" onclick="cpKeywords('kw-${p}',this)" style="flex:1">키워드 복사</button>
+            <button class="copy-btn" onclick="cpAllContent('${p}',this)" style="flex:1">전체 복사</button>
           </div>
           <div id="kw-box-${p}" style="display:none;margin-top:10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px">
             <div style="font-size:11px;color:var(--text3);margin-bottom:6px;letter-spacing:.05em">SEO 키워드 추천</div>
@@ -908,27 +930,44 @@ async function generateAll(){
         renderInsta('insta-area',result);
       } else {
         const box=document.getElementById('box-'+p);
-        // 제목/키워드/본문 분리
-        const titleMatch=result.match(/제목\s*추천[\s\S]*?(?=키워드|$)/i);
-        const kwMatch=result.match(/키워드\s*추천[\s\S]*$/i);
-        let bodyText=result;
-        if(titleMatch) bodyText=bodyText.replace(titleMatch[0],'').trim();
-        if(kwMatch) bodyText=bodyText.replace(kwMatch[0],'').trim();
-        const kwText=kwMatch?kwMatch[0].replace(/키워드\s*추천/i,'').trim():'';
+        // 마커 기반 파싱
+        const tm=result.match(/\[TITLES\]\s*([\s\S]*?)(?=\[BODY\]|\[KEYWORDS\]|$)/i);
+        const bm=result.match(/\[BODY\]\s*([\s\S]*?)(?=\[KEYWORDS\]|$)/i);
+        const km=result.match(/\[KEYWORDS\]\s*([\s\S]*?)$/i);
+        const titlesText=tm?tm[1].trim():'';
+        const bodyText=bm?bm[1].trim():result;
+        const kwText=km?km[1].trim():'';
 
         box.className='rbox';box.textContent=bodyText;
         document.getElementById('btns-'+p).style.display='block';
 
-        // 제목 5개 렌더링
-        if(titleMatch){
-          const lines=titleMatch[0].replace(/제목\s*추천/i,'').trim().split('\n').filter(l=>l.trim()).map(l=>l.replace(/^\d+\.\s*/,'').trim()).filter(l=>l);
-          if(lines.length){
+        // 제목 5개 렌더링 (점수 포함, 복사는 제목만)
+        if(titlesText){
+          const rawLines=titlesText.split('\n').filter(l=>l.trim());
+          const titles=[];
+          let cur={title:'',score:''};
+          rawLines.forEach(l=>{
+            const scoreMatch=l.match(/점수\s*:\s*([\d.]+)/i);
+            const titleMatch=l.match(/^\d+\.\s*(.+)/);
+            if(titleMatch){
+              if(cur.title) titles.push({...cur});
+              cur={title:titleMatch[1].trim(),score:''};
+            } else if(scoreMatch){
+              cur.score=scoreMatch[1];
+            }
+          });
+          if(cur.title) titles.push(cur);
+
+          if(titles.length){
             const titlesEl=document.getElementById('titles-'+p);
-            titlesEl.innerHTML=lines.map((t,i)=>`
-              <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
-                <span style="font-size:11px;color:var(--text3);flex-shrink:0">${i+1}</span>
-                <span style="font-size:13px;color:var(--text);flex:1;line-height:1.5" class="ttxt">${t}</span>
-                <button class="copy-btn" style="padding:3px 10px;font-size:11px;flex-shrink:0" onclick="cpInline('${t.replace(/'/g,"\\'").replace(/"/g,'&quot;')}',this)">복사</button>
+            titlesEl.innerHTML=titles.map((t,i)=>`
+              <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+                <div style="display:flex;align-items:flex-start;gap:8px">
+                  <span style="font-size:11px;color:var(--text3);flex-shrink:0;margin-top:2px">${i+1}</span>
+                  <span style="font-size:13px;color:var(--text);flex:1;line-height:1.5" class="ttxt">${t.title}</span>
+                  <button class="copy-btn" style="padding:3px 10px;font-size:11px;flex-shrink:0" onclick="cpInline('${t.title.replace(/'/g,"\\'").replace(/"/g,'&quot;')}',this)">복사</button>
+                </div>
+                ${t.score?`<div style="margin-top:4px;margin-left:19px;font-size:11px;color:var(--gold);font-weight:700">점수: ${t.score} / 10</div>`:''}
               </div>`).join('');
             document.getElementById('title-box-'+p).style.display='block';
           }
@@ -971,4 +1010,3 @@ async function generateAll(){
 </script>
 </body>
 </html>
-

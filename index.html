@@ -477,6 +477,11 @@ footer{
     </a>
   </div>
 
+  <!-- 쿠팡 위젯 2 -->
+  <div style="width:100%;overflow:hidden;margin-top:12px">
+    <iframe src="https://ads-partners.coupang.com/widgets.html?id=979546&template=carousel&trackingCode=AF5722914&subId=&width=728&height=120&tsource=" width="100%" height="120" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
+  </div>
+
   <!-- 블로그 자동화 홍보 배너 -->
   <a href="https://zhei-la.github.io/Blog-Auto-promotion/" target="_blank" rel="noopener" class="promo-banner">
     <h3>블로그 자동화 · 대행</h3>
@@ -492,11 +497,6 @@ footer{
     </div>
     <div class="collab-btn" style="margin:0 auto">자세히 보기 →</div>
   </a>
-
-  <!-- 쿠팡 위젯 2 -->
-  <div style="width:100%;overflow:hidden;margin-top:12px">
-    <iframe src="https://ads-partners.coupang.com/widgets.html?id=979546&template=carousel&trackingCode=AF5722914&subId=&width=728&height=120&tsource=" width="100%" height="120" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
-  </div>
 
   <!-- 결과 -->
   <div class="result-section" id="resultSection">
@@ -624,15 +624,20 @@ ${base}
 게시물만 출력하세요.`;
 }
 
-async function callClaude(prompt){
-  const r=await fetch('https://api.anthropic.com/v1/messages',{
+async function callOpenAI(prompt){
+  const r=await fetch('https://blog-draft-production.up.railway.app/api/generate',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+    body:JSON.stringify({
+      model:'gpt-4o-mini',
+      messages:[{role:'user',content:prompt}],
+      temperature:0.85,
+      max_tokens:2000
+    })
   });
   if(!r.ok){const e=await r.json();throw new Error(e.error?.message||`HTTP ${r.status}`)}
   const d=await r.json();
-  return d.content.map(b=>b.text||'').join('').trim();
+  return d.choices[0].message.content.trim();
 }
 
 function parseInsta(text){
@@ -726,7 +731,7 @@ async function generateAll(){
 
   await Promise.all(platforms.map(async p=>{
     try{
-      const result=await callClaude(buildPrompt(p,info));
+      const result=await callOpenAI(buildPrompt(p,info));
       if(p==='instagram'){
         renderInsta('insta-area',result);
       } else {

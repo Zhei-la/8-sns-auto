@@ -965,10 +965,20 @@ async function generateAll(){
                 <div style="display:flex;align-items:flex-start;gap:8px">
                   <span style="font-size:11px;color:var(--text3);flex-shrink:0;margin-top:2px">${i+1}</span>
                   <span style="font-size:13px;color:var(--text);flex:1;line-height:1.5" class="ttxt">${t.title}</span>
-                  <button class="copy-btn" style="padding:3px 10px;font-size:11px;flex-shrink:0" onclick="cpInline('${t.title.replace(/'/g,"\\'").replace(/"/g,'&quot;')}',this)">복사</button>
+                  <button class="copy-btn copy-title-btn" data-title="${t.title.replace(/"/g,'&quot;')}" style="padding:3px 10px;font-size:11px;flex-shrink:0">복사</button>
                 </div>
                 ${t.score?`<div style="margin-top:4px;margin-left:19px;font-size:11px;color:var(--gold);font-weight:700">점수: ${t.score} / 10</div>`:''}
               </div>`).join('');
+            // 복사 이벤트 바인딩
+            titlesEl.querySelectorAll('.copy-title-btn').forEach(btn=>{
+              btn.addEventListener('click',()=>{
+                const txt=btn.getAttribute('data-title');
+                const o=btn.textContent;
+                if(navigator.clipboard&&navigator.clipboard.writeText){
+                  navigator.clipboard.writeText(txt).then(()=>{btn.textContent='복사됨!';setTimeout(()=>{btn.textContent=o},1500);}).catch(()=>{fallbackCopy(txt);btn.textContent='복사됨!';setTimeout(()=>{btn.textContent=o},1500);});
+                } else {fallbackCopy(txt);btn.textContent='복사됨!';setTimeout(()=>{btn.textContent=o},1500);}
+              });
+            });
             document.getElementById('title-box-'+p).style.display='block';
           }
         }
@@ -1010,3 +1020,4 @@ async function generateAll(){
 </script>
 </body>
 </html>
+

@@ -266,8 +266,9 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .collab-section p{font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.7}
 .collab-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:14px}
 .collab-chip{
-  padding:4px 12px;border-radius:99px;border:1px solid var(--border2);
-  font-size:12px;background:var(--bg3);color:var(--text2);
+  padding:4px 10px;border-radius:99px;border:1px solid var(--border2);
+  font-size:11px;background:var(--bg3);color:var(--text2);
+  white-space:nowrap;
 }
 .collab-btn{
   display:inline-flex;align-items:center;gap:7px;
@@ -275,6 +276,15 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
   font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;transition:all .2s;
 }
 .collab-btn:hover{background:var(--gold2)}
+
+@media(max-width:560px){
+  .promo-grid{grid-template-columns:1fr!important}
+  .main{padding:0 1rem 60px}
+  .collab-chip{font-size:10px;padding:3px 8px}
+  .promo-banner h3{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .promo-banner p{font-size:12px}
+  .collab-section p{font-size:12px}
+}
 
 .style-cat{
   border:1px solid var(--border2);border-radius:var(--radius-sm);
@@ -317,7 +327,7 @@ footer{
   </div>
 
   <!-- 쿠팡 위젯 1 -->
-  <div style="width:100%;overflow:hidden;margin-bottom:12px">
+  <div style="width:100%;overflow:hidden;margin-bottom:12px" onclick="trackCoupang()">
     <iframe src="https://ads-partners.coupang.com/widgets.html?id=979545&template=carousel&trackingCode=AF5722914&subId=&width=728&height=120&tsource=" width="100%" height="120" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
   </div>
 
@@ -333,7 +343,15 @@ footer{
     </div>
     <div class="field">
       <label>업체명 또는 플레이스 링크</label>
-      <input type="text" id="place" placeholder="업체명 또는 네이버 지도·카카오맵 링크" />
+      <div style="display:flex;gap:8px">
+        <input type="text" id="place" placeholder="업체명 또는 네이버 플레이스 링크" style="flex:1" />
+        <button onclick="searchPlace()" id="searchBtn" style="
+          padding:9px 14px;background:var(--gold-dim);border:1px solid var(--gold-border);
+          border-radius:var(--radius-sm);color:var(--gold);font-size:12px;font-weight:700;
+          cursor:pointer;white-space:nowrap;font-family:'Noto Sans KR',sans-serif;flex-shrink:0
+        ">🔍 자동검색</button>
+      </div>
+      <div id="searchStatus" style="font-size:11px;color:var(--text3);margin-top:5px;display:none"></div>
     </div>
     <div class="field">
       <label>추가 정보 <span style="color:var(--text3);font-weight:400">(메뉴·가격·특징 등 — 선택사항)</span></label>
@@ -413,7 +431,7 @@ footer{
 
 
   <!-- 쿠팡 위젯 2 -->
-  <div style="width:100%;overflow:hidden;margin-top:12px">
+  <div style="width:100%;overflow:hidden;margin-top:12px" onclick="trackCoupang()">
     <iframe src="https://ads-partners.coupang.com/widgets.html?id=979546&template=carousel&trackingCode=AF5722914&subId=&width=728&height=120&tsource=" width="100%" height="120" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
   </div>
 
@@ -479,6 +497,89 @@ footer{
 </footer>
 
 <script>
+async function searchPlace(){
+  const place = document.getElementById('place').value.trim();
+  if(!place){alert('업체명 또는 링크를 먼저 입력해주세요');return;}
+  const btn = document.getElementById('searchBtn');
+  const status = document.getElementById('searchStatus');
+  btn.textContent = '검색 중...';
+  btn.style.opacity = '0.5';
+  btn.disabled = true;
+  status.style.display = 'block';
+  status.textContent = '매장 정보를 검색하고 있어요...';
+
+  try {
+    const prompt = `다음 매장을 웹에서 검색해서 아래 정보를 찾아줘:
+매장명/링크: ${place}
+
+찾아야 할 정보:
+- 매장명
+- 주소
+- 영업시간
+- 휴무일
+- 전화번호
+- 주차 가능 여부
+- 대표 메뉴 및 가격 (있으면)
+- 특징/편의시설
+
+반드시 아래 형식으로만 출력해줘 (없는 정보는 "정보없음" 으로):
+매장명: 
+주소: 
+영업시간: 
+휴무일: 
+전화번호: 
+주차: 
+대표메뉴: 
+특징: `;
+
+    const res = await fetch('https://blog-draft-production.up.railway.app/api/generate', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{role:'user', content: prompt}],
+        temperature: 0.3,
+        max_tokens: 500
+      })
+    });
+    const data = await res.json();
+    const result = data.choices[0].message.content.trim();
+
+    // 키워드 자동 채우기
+    const nameMatch = result.match(/매장명:\s*(.+)/);
+    if(nameMatch && nameMatch[1].trim() !== '정보없음' && !document.getElementById('keyword').value){
+      document.getElementById('keyword').value = nameMatch[1].trim();
+    }
+
+    document.getElementById('extra').value = result;
+    status.textContent = '✅ 매장 정보를 찾았어요! 내용을 확인하고 수정해주세요';
+    status.style.color = 'var(--gold)';
+  } catch(e) {
+    status.textContent = '❌ 검색 실패: ' + e.message;
+    status.style.color = '#e57373';
+  }
+  btn.textContent = '🔍 자동검색';
+  btn.style.opacity = '1';
+  btn.disabled = false;
+}
+
+
+  fetch('https://blog-draft-production.up.railway.app/api/track/coupang',{method:'POST'}).catch(()=>{});
+}
+
+// 관리자 버튼 (URL에 ?admin=비밀코드 있을 때만 표시)
+(function(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('admin') === 'zheila9923'){
+    const btn = document.createElement('a');
+    btn.href = '/security';
+    btn.target = '_blank';
+    btn.style.cssText = 'position:fixed;bottom:20px;right:20px;background:var(--gold);color:#0e0e0f;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;z-index:999;opacity:0.9';
+    btn.textContent = '🔐 관리자';
+    document.body.appendChild(btn);
+  }
+})();
+
 function toggleP(el){
   el.classList.toggle('active');
 }
@@ -739,3 +840,4 @@ async function generateAll(){
 </script>
 </body>
 </html>
+

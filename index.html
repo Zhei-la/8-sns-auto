@@ -366,58 +366,13 @@ footer{
       </div>
     </div>
     <div class="field">
-      <label>리뷰 톤</label>
+      <label>말투</label>
       <div class="chips" id="tone">
-        <div class="chip on" onclick="solo(this)">친근한</div>
-        <div class="chip" onclick="solo(this)">정보형</div>
-        <div class="chip" onclick="solo(this)">감성적인</div>
-        <div class="chip" onclick="solo(this)">솔직후기</div>
-        <div class="chip" onclick="solo(this)">전문적인</div>
-      </div>
-    </div>
-    <div class="field">
-      <label>업종</label>
-      <div id="category-wrap">
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:8px" id="cat-tabs">
-          <div class="style-cat on" onclick="selectCat(this,'food')">🍽 장소·음식</div>
-          <div class="style-cat" onclick="selectCat(this,'product')">🛍 제품·서비스</div>
-          <div class="style-cat" onclick="selectCat(this,'travel')">✈ 여행·숙박</div>
-          <div class="style-cat" onclick="selectCat(this,'health')">💪 헬스·뷰티</div>
-        </div>
-        <div class="style-sub-wrap" id="sub-food">
-          <div class="chip on" onclick="soloCat(this)">맛집</div>
-          <div class="chip" onclick="soloCat(this)">카페</div>
-          <div class="chip" onclick="soloCat(this)">브런치</div>
-          <div class="chip" onclick="soloCat(this)">술집·바</div>
-          <div class="chip" onclick="soloCat(this)">배달</div>
-          <div class="chip" onclick="soloCat(this)">디저트</div>
-          <div class="chip" onclick="soloCat(this)">패스트푸드</div>
-        </div>
-        <div class="style-sub-wrap" id="sub-product" style="display:none">
-          <div class="chip" onclick="soloCat(this)">생활용품</div>
-          <div class="chip" onclick="soloCat(this)">인테리어·소품</div>
-          <div class="chip" onclick="soloCat(this)">디지털·가전</div>
-          <div class="chip" onclick="soloCat(this)">식품·건강식품</div>
-          <div class="chip" onclick="soloCat(this)">패션·의류</div>
-          <div class="chip" onclick="soloCat(this)">유아·육아</div>
-        </div>
-        <div class="style-sub-wrap" id="sub-travel" style="display:none">
-          <div class="chip" onclick="soloCat(this)">호텔</div>
-          <div class="chip" onclick="soloCat(this)">펜션·리조트</div>
-          <div class="chip" onclick="soloCat(this)">국내여행</div>
-          <div class="chip" onclick="soloCat(this)">해외여행</div>
-          <div class="chip" onclick="soloCat(this)">항공·교통</div>
-          <div class="chip" onclick="soloCat(this)">액티비티</div>
-        </div>
-        <div class="style-sub-wrap" id="sub-health" style="display:none">
-          <div class="chip" onclick="soloCat(this)">스킨케어</div>
-          <div class="chip" onclick="soloCat(this)">헤어·네일</div>
-          <div class="chip" onclick="soloCat(this)">다이어트·보조제</div>
-          <div class="chip" onclick="soloCat(this)">헬스·운동용품</div>
-          <div class="chip" onclick="soloCat(this)">병원·클리닉</div>
-          <div class="chip" onclick="soloCat(this)">스파·마사지</div>
-        </div>
-        <input type="hidden" id="category" value="맛집">
+        <div class="chip on" onclick="solo(this)">친근하게</div>
+        <div class="chip" onclick="solo(this)">정보형으로</div>
+        <div class="chip" onclick="solo(this)">감성적으로</div>
+        <div class="chip" onclick="solo(this)">솔직하게</div>
+        <div class="chip" onclick="solo(this)">전문적으로</div>
       </div>
     </div>
     <div class="field">
@@ -456,15 +411,6 @@ footer{
   <button class="gen-btn" id="genBtn" onclick="generateAll()">✦ 원고 생성하기</button>
   <div class="err" id="err"></div>
 
-  <!-- CPA 광고 배너 -->
-  <div class="ad-grid" style="margin-top:12px">
-    <a href="CPA_LINK_1" target="_blank" rel="noopener" style="display:block;border-radius:var(--radius-sm);overflow:hidden;height:200px;background:#f9f9f9">
-      <img src="CPA_IMG_1" alt="" style="width:100%;height:100%;object-fit:cover;display:block">
-    </a>
-    <a href="https://tadsywww.adpt.kr" target="_blank" rel="noopener" style="display:block;border-radius:var(--radius-sm);overflow:hidden;height:200px;background:#fff">
-      <img src="https://raw.githubusercontent.com/Zhei-la/Blog-draft/main/Gemini_Generated_Image_6n33rm6n33rm6n33.png" alt="" style="width:100%;height:100%;object-fit:contain;object-position:center;display:block">
-    </a>
-  </div>
 
   <!-- 쿠팡 위젯 2 -->
   <div style="width:100%;overflow:hidden;margin-top:12px">
@@ -577,14 +523,49 @@ function buildPrompt(p,info){
   const L={짧게:{n:'1000~1500자',t:'1000~1500자'},보통:{n:'1500~2000자',t:'1500~2000자'},길게:{n:'2000~3000자',t:'2000~3000자'}};
   const base=`키워드: ${info.keyword}\n업체: ${info.place||'미입력'}\n업종: ${info.category}\n추가정보: ${info.extra||'없음'}\n나이대: ${info.age} / 성별: ${info.gender} / 리뷰톤: ${info.tone} / 리뷰스타일: ${info.style} / 분량: ${info.length}\n\n※ 키워드를 글 전체에 자연스럽게 녹여서 사용할 것. 추가정보에 "키워드 (숫자)" 형식이 있으면 그 횟수 이상 반드시 포함, 숫자가 없으면 글 분량에 맞게 센스 있게 적절히 반복할 것`;
 
-  if(p==='naver') return `당신은 네이버 블로그 체험단·기자단 전문 작가입니다.
-아래 정보로 네이버 블로그 원고를 작성하세요.
-- 분량: ${L[info.length].n}
-- 제목 포함 (SEO 최적화, 키워드 자연스럽게)
-- 소제목 2~3개 ([위치·접근성] [메뉴·서비스] [총평] 형식)
-- 실제 방문자처럼, AI 티 절대 금지
-- 마지막에 별점(★)과 재방문 의사 한 줄
-${base}
+  if(p==='naver') return `너는 네이버 블로그 상위노출을 목표로 하는 콘텐츠 작성 전문가다.
+사람이 직접 쓴 것처럼 자연스럽고 읽기 편한 글을 작성한다.
+AI가 쓴 티가 나면 실패다.
+
+절대 규칙:
+- 이모지 절대 사용 금지
+- 번역투, 어색한 문장, 외국어 혼용 금지
+- 과한 설명체 금지
+- 기계적인 반복 구조 금지
+
+문장 스타일:
+- 줄바꿈 적극 사용
+- 문단은 짧게 구성
+- 읽다가 막히지 않게 자연스럽게 흐름 유지
+- 문장 끝 마침표 될 수 있으면 사용하지 말 것
+- 문장 끝나면 줄바꿈
+
+출력 구조 (반드시 이 순서):
+1. 제목
+2. 도입부 (자연스럽게 시작, 방문 이유 포함)
+3. 본문 (경험형 + 정보형 섞어서, 중간중간 한 줄 비우기 필수)
+4. 매장 정보 (아래 형식 정확히):
+가게 정보
+위치 - {주소}
+영업시간 - {영업시간}
+전화번호 - {전화번호}
+주차장 있음!
+5. 마무리
+6. 키워드 추천 (맨 마지막, 10개 이상, 지역+키워드 조합)
+
+본문 흐름:
+처음 방문 계기 → 메뉴/맛 설명 → 매장 분위기 → 개인적인 느낌
+
+분량: ${L[info.length].n}
+매장명은 제목과 본문에 자연스럽게 최소 2회 이상 포함
+키워드를 글 전체에 자연스럽게 녹여서 사용
+
+매장명: ${info.keyword}
+플레이스 링크: ${info.place||'없음'}
+업종: ${info.category}
+추가정보: ${info.extra||'없음'}
+나이대: ${info.age} / 성별: ${info.gender} / 톤: ${info.tone} / 스타일: ${info.style}
+
 원고만 출력하세요.`;
 
   if(p==='tistory') return `당신은 티스토리 블로그 체험단·기자단 작가입니다.

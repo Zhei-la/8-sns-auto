@@ -570,6 +570,25 @@ async function searchPlace(){
   btn.disabled = false;
 }
 
+function cpInline(text,btn){
+  const o=btn.textContent;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>{btn.textContent='복사됨!';setTimeout(()=>{btn.textContent=o},1500);}).catch(()=>{fallbackCopy(text);btn.textContent='복사됨!';setTimeout(()=>{btn.textContent=o},1500);});
+  } else {fallbackCopy(text);btn.textContent='복사됨!';setTimeout(()=>{btn.textContent=o},1500);}
+}
+
+function cpKeywords(id,btn){
+  const text=document.getElementById(id).textContent;
+  const o=btn.textContent;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>{
+      btn.textContent='복사 완료!';setTimeout(()=>{btn.textContent=o},1500);
+    }).catch(()=>{fallbackCopy(text);btn.textContent='복사 완료!';setTimeout(()=>{btn.textContent=o},1500);});
+  } else {
+    fallbackCopy(text);btn.textContent='복사 완료!';setTimeout(()=>{btn.textContent=o},1500);
+  }
+}
+
 function trackCoupang(){
   fetch('https://blog-draft-production.up.railway.app/api/track/coupang',{method:'POST'}).catch(()=>{});
 }
@@ -673,9 +692,13 @@ AI가 쓴 티가 나면 실패다.
 
 매장명: ${info.keyword}
 플레이스 링크: ${info.place||'없음'}
-업종: ${info.category}
 추가정보: ${info.extra||'없음'}
 나이대: ${info.age} / 성별: ${info.gender} / 톤: ${info.tone} / 스타일: ${info.style}
+
+반드시 아래 순서로 출력:
+1. 제목 추천 (5개, 각각 번호 붙여서)
+2. 본문
+3. 키워드 추천 (10개 이상, 지역+키워드 조합)
 
 원고만 출력하세요.`;
 
@@ -812,7 +835,7 @@ async function generateAll(){
     keyword,
     place:document.getElementById('place').value.trim(),
     extra:document.getElementById('extra').value.trim(),
-    category:val('category'),
+    category:'블로그',
     age:val('age'),gender:val('gender'),
     tone:val('tone'),style:val('style'),length:val('length'),
   };
@@ -847,7 +870,22 @@ async function generateAll(){
         <div class="insta-panel loading"><div class="panel-label">🏷 해시태그</div><div class="panel-body"><div class="spin"></div></div></div>
       </div></div>`;
     } else {
-      rc.innerHTML=`<div class="rbox loading" id="box-${p}"><div class="spin"></div> 원고 생성 중...</div><button class="copy-btn" id="copy-${p}" onclick="cpText('box-${p}',this)">원고 복사하기</button>`;
+      rc.innerHTML=`
+        <div class="rbox loading" id="box-${p}"><div class="spin"></div> 원고 생성 중...</div>
+        <div style="display:none" id="btns-${p}">
+          <div id="title-box-${p}" style="display:none;margin-top:10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:8px;letter-spacing:.05em">제목 추천 5개</div>
+            <div id="titles-${p}"></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <button class="copy-btn" onclick="cpText('box-${p}',this)" style="flex:1">본문 복사</button>
+            <button class="copy-btn" onclick="cpKeywords('kw-${p}',this)" style="flex:1">키워드 복사</button>
+          </div>
+          <div id="kw-box-${p}" style="display:none;margin-top:10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px;letter-spacing:.05em">SEO 키워드 추천</div>
+            <div id="kw-${p}" style="font-size:13px;color:var(--text2);line-height:2"></div>
+          </div>
+        </div>`;
     }
     contentsEl.appendChild(rc);
   });
@@ -862,8 +900,36 @@ async function generateAll(){
         renderInsta('insta-area',result);
       } else {
         const box=document.getElementById('box-'+p);
-        box.className='rbox';box.textContent=result;
-        document.getElementById('copy-'+p).style.display='inline-block';
+        // 제목/키워드/본문 분리
+        const titleMatch=result.match(/제목\s*추천[\s\S]*?(?=키워드|$)/i);
+        const kwMatch=result.match(/키워드\s*추천[\s\S]*$/i);
+        let bodyText=result;
+        if(titleMatch) bodyText=bodyText.replace(titleMatch[0],'').trim();
+        if(kwMatch) bodyText=bodyText.replace(kwMatch[0],'').trim();
+        const kwText=kwMatch?kwMatch[0].replace(/키워드\s*추천/i,'').trim():'';
+
+        box.className='rbox';box.textContent=bodyText;
+        document.getElementById('btns-'+p).style.display='block';
+
+        // 제목 5개 렌더링
+        if(titleMatch){
+          const lines=titleMatch[0].replace(/제목\s*추천/i,'').trim().split('\n').filter(l=>l.trim()).map(l=>l.replace(/^\d+\.\s*/,'').trim()).filter(l=>l);
+          if(lines.length){
+            const titlesEl=document.getElementById('titles-'+p);
+            titlesEl.innerHTML=lines.map((t,i)=>`
+              <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+                <span style="font-size:11px;color:var(--text3);flex-shrink:0">${i+1}</span>
+                <span style="font-size:13px;color:var(--text);flex:1;line-height:1.5" class="ttxt">${t}</span>
+                <button class="copy-btn" style="padding:3px 10px;font-size:11px;flex-shrink:0" onclick="cpInline('${t.replace(/'/g,"\\'").replace(/"/g,'&quot;')}',this)">복사</button>
+              </div>`).join('');
+            document.getElementById('title-box-'+p).style.display='block';
+          }
+        }
+
+        if(kwText){
+          document.getElementById('kw-'+p).textContent=kwText;
+          document.getElementById('kw-box-'+p).style.display='block';
+        }
       }
     } catch(e){
       // 에러 원인 파악

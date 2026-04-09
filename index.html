@@ -302,6 +302,8 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 }
 .style-cat.on{background:var(--gold-dim);border-color:var(--gold-border);color:var(--gold)}
 .style-sub-wrap{display:flex;flex-wrap:wrap;gap:6px;padding:2px 0}
+.thumb-style-btn{padding:6px 4px;border-radius:var(--radius-sm);border:1px solid var(--border2);font-size:11px;background:var(--bg2);color:var(--text2);cursor:pointer;text-align:center;transition:all .15s;user-select:none}
+.thumb-style-btn.on{background:var(--gold-dim);border-color:var(--gold-border);color:var(--gold);font-weight:700}
 @media(max-width:560px){.promo-grid{grid-template-columns:1fr!important}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 .length-chip{
@@ -350,20 +352,12 @@ footer{
       <input type="text" id="keyword" placeholder="예: 성수동 브런치 카페, 강남 스파, 홍대 맛집" />
     </div>
     <div class="field">
-      <label>업체명 또는 플레이스 링크</label>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="place" placeholder="업체명 또는 네이버 플레이스 링크" style="flex:1" />
-        <button onclick="searchPlace()" id="searchBtn" style="
-          padding:9px 14px;background:var(--gold-dim);border:1px solid var(--gold-border);
-          border-radius:var(--radius-sm);color:var(--gold);font-size:12px;font-weight:700;
-          cursor:pointer;white-space:nowrap;font-family:'Noto Sans KR',sans-serif;flex-shrink:0
-        ">🔍 자동검색</button>
-      </div>
-      <div id="searchStatus" style="font-size:11px;color:var(--text3);margin-top:5px;display:none"></div>
+      <label>플레이스 링크 <span style="color:var(--text3);font-weight:400">(입력시 본문 마지막에 자동 삽입)</span></label>
+      <input type="text" id="place" placeholder="예: https://naver.me/xxxxx" />
     </div>
     <div class="field">
       <label>추가 정보 <span style="color:var(--text3);font-weight:400">(메뉴·가격·특징 등 — 선택사항)</span></label>
-      <textarea id="extra" placeholder="예: 아메리카노 6,500원 / 루프탑 좌석 있음 / 주차 무료&#10;키워드 반복 횟수 지정: 성수동 브런치 카페 (3) — 숫자 생략 시 AI가 알아서 조절"></textarea>
+      <textarea id="extra" placeholder="예: 아메리카노 6,500원 / 루프탑 좌석 있음 / 주차 무료"></textarea>
     </div>
   </div>
 
@@ -437,7 +431,6 @@ footer{
   <button class="gen-btn" id="genBtn" onclick="generateAll()">✦ 원고 생성하기</button>
   <div class="err" id="err"></div>
 
-
   <!-- 쿠팡 위젯 2 -->
   <div style="width:100%;overflow:hidden;margin-top:12px;pointer-events:none">
     <iframe style="pointer-events:auto" src="https://ads-partners.coupang.com/widgets.html?id=979546&template=carousel&trackingCode=AF5722914&subId=&width=728&height=120&tsource=" width="100%" height="120" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
@@ -445,10 +438,6 @@ footer{
 
   <!-- 결과 -->
   <div class="result-section" id="resultSection">
-    <div class="result-header">
-      <h3>생성된 원고</h3>
-      <div class="rtabs" id="rtabs"></div>
-    </div>
     <div id="rcontents"></div>
   </div>
 
@@ -570,6 +559,52 @@ async function searchPlace(){
   btn.disabled = false;
 }
 
+async function regenTitlesB(p,btn){
+  const o=btn.textContent;btn.textContent='생성 중...';btn.disabled=true;
+  try{
+    const info={keyword:document.getElementById('keyword').value.trim(),place:document.getElementById('place').value.trim(),extra:document.getElementById('extra').value.trim(),category:'블로그',age:val('age'),gender:val('gender'),tone:val('tone'),style:val('style'),length:val('length')};
+    const prompt=`제목 5개만 생성해줘. 초강력 후킹 필수. 형식: 번호. 제목 다음줄에 점수: X.X\n매장명: ${info.keyword}\n톤: ${info.tone}`;
+    const result=await callOpenAI(prompt);
+    const rawLines=result.split('\n').filter(l=>l.trim());
+    const titles=[];let cur={title:'',score:''};
+    rawLines.forEach(l=>{
+      const sm=l.match(/점수\s*:\s*([\d.]+)/i);const tm=l.match(/^\d+\.\s*(.+)/);
+      if(tm){if(cur.title)titles.push({...cur});cur={title:tm[1].trim(),score:''};}
+      else if(sm){cur.score=sm[1];}
+    });
+    if(cur.title)titles.push(cur);
+    const titlesEl=document.getElementById('titles-'+p);
+    titlesEl.innerHTML=titles.map((t,i)=>`
+      <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:flex-start;gap:8px">
+          <span style="font-size:11px;color:var(--text3);flex-shrink:0;margin-top:2px">${i+1}</span>
+          <span style="font-size:13px;color:var(--text);flex:1;line-height:1.5" class="ttxt">${t.title}</span>
+          <button class="copy-btn copy-title-btn" data-title="${t.title.replace(/"/g,'&quot;')}" style="padding:3px 10px;font-size:11px;flex-shrink:0">복사</button>
+        </div>
+        ${t.score?`<div style="margin-top:4px;margin-left:19px;font-size:11px;color:var(--gold);font-weight:700">점수: ${t.score} / 10</div>`:''}
+      </div>`).join('');
+    titlesEl.querySelectorAll('.copy-title-btn').forEach(btn2=>{
+      btn2.addEventListener('click',()=>{
+        const txt=btn2.getAttribute('data-title');const o2=btn2.textContent;
+        if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(()=>{btn2.textContent='복사됨!';setTimeout(()=>{btn2.textContent=o2},1500);}).catch(()=>{fallbackCopy(txt);btn2.textContent='복사됨!';setTimeout(()=>{btn2.textContent=o2},1500);});}
+        else{fallbackCopy(txt);btn2.textContent='복사됨!';setTimeout(()=>{btn2.textContent=o2},1500);}
+      });
+    });
+  }catch(e){}
+  btn.textContent=o;btn.disabled=false;
+}
+
+async function regenKeywordsB(p,btn){
+  const o=btn.textContent;btn.textContent='생성 중...';btn.disabled=true;
+  try{
+    const kw=document.getElementById('keyword').value.trim();
+    const result=await callOpenAI(`네이버 SEO 키워드 10개 생성. 지역+키워드 조합. 한줄에 하나씩. 키워드: ${kw}`);
+    document.getElementById('kw-'+p).textContent=result;
+    document.getElementById('kw-box-'+p).style.display='block';
+  }catch(e){}
+  btn.textContent=o;btn.disabled=false;
+}
+
 function cpAllTitles(p,btn){
   const titles=[...document.querySelectorAll(`#titles-${p} .ttxt`)].map(t=>t.textContent).join('\n');
   const o=btn.textContent;
@@ -606,6 +641,65 @@ function cpKeywords(id,btn){
   } else {
     fallbackCopy(text);btn.textContent='복사 완료!';setTimeout(()=>{btn.textContent=o},1500);
   }
+}
+
+function selectThumbStyle(el,p){
+  document.querySelectorAll(`#thumb-styles-${p} .thumb-style-btn`).forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+}
+
+async function genThumbnail(p,btn){
+  const style=document.querySelector(`#thumb-styles-${p} .thumb-style-btn.on`)?.dataset.style||'auto';
+  const userPrompt=document.getElementById('thumb-prompt-'+p).value.trim();
+  const title=document.querySelector(`#titles-${p} .ttxt`)?.textContent||'';
+  const body=document.getElementById('box-'+p)?.textContent?.slice(0,200)||'';
+
+  const o=btn.textContent;btn.textContent='생성 중...';btn.disabled=true;
+
+  const styleMap={
+    blog:'Korean blog thumbnail, bold text overlay, clean modern layout, white background',
+    food:'Korean food photography, delicious food close-up, warm lighting, appetizing, restaurant quality',
+    person:'Korean lifestyle photo, natural person, warm soft atmosphere, candid moment',
+    anime:'Korean webtoon illustration, cute anime style, vibrant colors, clean line art',
+    minimal:'minimalist design, simple geometric shapes, clean white space, elegant modern',
+    auto:'Korean blog thumbnail, professional, eye-catching, vibrant colors'
+  };
+
+  let imgPrompt='';
+  if(userPrompt){
+    imgPrompt=`Korean blog thumbnail. ${styleMap[style]}. ${userPrompt}. High quality, wide format.`;
+  } else {
+    try{
+      const promptRes=await callOpenAI(`다음 블로그 글에 어울리는 썸네일 이미지 영어 프롬프트를 딱 한 문장으로 만들어줘.
+제목: ${title}
+내용: ${body}
+스타일: ${styleMap[style]}
+영어로만, 한 문장으로만 출력.`);
+      imgPrompt=promptRes.trim()+`, ${styleMap[style]}, high quality`;
+    }catch(e){
+      imgPrompt=`Korean blog thumbnail, ${title}, ${styleMap[style]}`;
+    }
+  }
+
+  try{
+    const encoded=encodeURIComponent(imgPrompt);
+    const url=`https://image.pollinations.ai/prompt/${encoded}?width=1200&height=675&nologo=true&seed=${Date.now()}`;
+    const img=document.getElementById('thumb-img-'+p);
+    img.onload=()=>{
+      document.getElementById('thumb-download-'+p).href=url;
+      document.getElementById('thumb-result-'+p).style.display='block';
+      btn.textContent=o;btn.disabled=false;
+    };
+    img.onerror=()=>{
+      alert('이미지 생성 실패 — 다시 시도해주세요');
+      btn.textContent=o;btn.disabled=false;
+    };
+    img.src=url;
+    return;
+  }catch(e){
+    alert('🔧 점검 중입니다. 잠시 후 다시 시도해주세요');
+  }
+  btn.textContent=o;btn.disabled=false;
 }
 
 function trackCoupang(){
@@ -899,23 +993,58 @@ async function generateAll(){
       </div></div>`;
     } else {
       rc.innerHTML=`
-        <div class="rbox loading" id="box-${p}"><div class="spin"></div> 원고 생성 중...</div>
-        <div style="display:none" id="btns-${p}">
-          <div id="title-box-${p}" style="display:none;margin-top:10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px">
-            <div style="font-size:11px;color:var(--text3);margin-bottom:8px;letter-spacing:.05em">제목 추천 5개</div>
+        <div style="display:none" id="result-wrap-${p}">
+          <!-- 제목 재생성 버튼 -->
+          <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+            <button class="copy-btn" onclick="regenTitlesB('${p}',this)">제목 재생성</button>
+          </div>
+          <!-- 제목 5개 -->
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:8px">제목 추천 5개</div>
             <div id="titles-${p}"></div>
           </div>
-          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-            <button class="copy-btn" onclick="cpAllTitles('${p}',this)" style="flex:1">제목 복사</button>
-            <button class="copy-btn" onclick="cpText('box-${p}',this)" style="flex:1">본문 복사</button>
-            <button class="copy-btn" onclick="cpKeywords('kw-${p}',this)" style="flex:1">키워드 복사</button>
-            <button class="copy-btn" onclick="cpAllContent('${p}',this)" style="flex:1">전체 복사</button>
+          <!-- 본문 복사 + 재생성 -->
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <button class="copy-btn" style="flex:1" onclick="cpText('box-${p}',this)">본문 복사</button>
+            <button class="copy-btn" style="flex:1" onclick="generateAll()">본문 재생성</button>
           </div>
-          <div id="kw-box-${p}" style="display:none;margin-top:10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px">
-            <div style="font-size:11px;color:var(--text3);margin-bottom:6px;letter-spacing:.05em">SEO 키워드 추천</div>
+          <!-- 본문 -->
+          <div class="rbox" id="box-${p}"></div>
+          <!-- 키워드 복사 + 재생성 -->
+          <div style="display:flex;gap:8px;margin:8px 0">
+            <button class="copy-btn" style="flex:1" onclick="cpKeywords('kw-${p}',this)">키워드 복사</button>
+            <button class="copy-btn" style="flex:1" onclick="regenKeywordsB('${p}',this)">키워드 재생성</button>
+          </div>
+          <!-- 키워드 -->
+          <div id="kw-box-${p}" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px">SEO 키워드 추천</div>
             <div id="kw-${p}" style="font-size:13px;color:var(--text2);line-height:2"></div>
           </div>
-        </div>`;
+
+          <!-- 썸네일 생성 -->
+          <div style="margin-top:12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px">
+            <div style="font-size:12px;color:var(--gold);font-weight:700;margin-bottom:10px">🖼 썸네일 생성</div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:8px">스타일 선택</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px" id="thumb-styles-${p}">
+              <div class="thumb-style-btn on" data-style="blog" onclick="selectThumbStyle(this,'${p}')">📝 텍스트형</div>
+              <div class="thumb-style-btn" data-style="food" onclick="selectThumbStyle(this,'${p}')">🍽 음식/맛집</div>
+              <div class="thumb-style-btn" data-style="person" onclick="selectThumbStyle(this,'${p}')">👤 실사 인물</div>
+              <div class="thumb-style-btn" data-style="anime" onclick="selectThumbStyle(this,'${p}')">🎨 애니메이션</div>
+              <div class="thumb-style-btn" data-style="minimal" onclick="selectThumbStyle(this,'${p}')">◻ 미니멀</div>
+              <div class="thumb-style-btn" data-style="auto" onclick="selectThumbStyle(this,'${p}')">✨ AI 자동</div>
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:5px">추가 설명 <span style="opacity:.6">(선택사항 — 비우면 제목+본문 기반 자동 생성)</span></div>
+            <textarea id="thumb-prompt-${p}" placeholder="예) 따뜻한 카페 분위기, 여성 20대, 봄 느낌" style="width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:8px 10px;color:var(--text);font-size:12px;font-family:'Noto Sans KR',sans-serif;resize:none;height:60px;outline:none;margin-bottom:8px"></textarea>
+            <button class="copy-btn" style="width:100%;padding:10px;font-size:13px;font-weight:700;background:var(--gold-dim);border-color:var(--gold-border);color:var(--gold)" onclick="genThumbnail('${p}',this)">🖼 썸네일 생성하기</button>
+            <div id="thumb-result-${p}" style="display:none;margin-top:10px">
+              <img id="thumb-img-${p}" src="" style="width:100%;border-radius:var(--radius-sm);display:block" />
+              <a id="thumb-download-${p}" download="thumbnail.png" style="display:block;margin-top:8px;text-align:center;padding:8px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-size:12px;text-decoration:none">⬇ 이미지 저장</a>
+            </div>
+          </div>
+        </div>
+        <!-- 생성 중 표시 -->
+        <div id="loading-${p}" class="rbox loading"><div class="spin"></div> 원고 생성 중...</div>
+      `;
     }
     contentsEl.appendChild(rc);
   });
@@ -930,7 +1059,6 @@ async function generateAll(){
         renderInsta('insta-area',result);
       } else {
         const box=document.getElementById('box-'+p);
-        // 마커 기반 파싱
         const tm=result.match(/\[TITLES\]\s*([\s\S]*?)(?=\[BODY\]|\[KEYWORDS\]|$)/i);
         const bm=result.match(/\[BODY\]\s*([\s\S]*?)(?=\[KEYWORDS\]|$)/i);
         const km=result.match(/\[KEYWORDS\]\s*([\s\S]*?)$/i);
@@ -938,51 +1066,46 @@ async function generateAll(){
         const bodyText=bm?bm[1].trim():result;
         const kwText=km?km[1].trim():'';
 
-        box.className='rbox';box.textContent=bodyText;
-        document.getElementById('btns-'+p).style.display='block';
+        // 로딩 숨기고 결과 표시
+        document.getElementById('loading-'+p).style.display='none';
+        document.getElementById('result-wrap-'+p).style.display='block';
 
-        // 제목 5개 렌더링 (점수 포함, 복사는 제목만)
+        // 플레이스 링크 본문 마지막에 삽입
+        const placeLink=document.getElementById('place').value.trim();
+        const finalBody=placeLink?bodyText+'\n\n▶ 매장 바로가기\n'+placeLink:bodyText;
+        box.textContent=finalBody;
+
+        // 제목 5개
         if(titlesText){
           const rawLines=titlesText.split('\n').filter(l=>l.trim());
-          const titles=[];
-          let cur={title:'',score:''};
+          const titles=[];let cur={title:'',score:''};
           rawLines.forEach(l=>{
-            const scoreMatch=l.match(/점수\s*:\s*([\d.]+)/i);
-            const titleMatch=l.match(/^\d+\.\s*(.+)/);
-            if(titleMatch){
-              if(cur.title) titles.push({...cur});
-              cur={title:titleMatch[1].trim(),score:''};
-            } else if(scoreMatch){
-              cur.score=scoreMatch[1];
-            }
+            const sm=l.match(/점수\s*:\s*([\d.]+)/i);
+            const tm2=l.match(/^\d+\.\s*(.+)/);
+            if(tm2){if(cur.title)titles.push({...cur});cur={title:tm2[1].trim(),score:''};}
+            else if(sm){cur.score=sm[1];}
           });
-          if(cur.title) titles.push(cur);
-
-          if(titles.length){
-            const titlesEl=document.getElementById('titles-'+p);
-            titlesEl.innerHTML=titles.map((t,i)=>`
-              <div style="padding:8px 0;border-bottom:1px solid var(--border)">
-                <div style="display:flex;align-items:flex-start;gap:8px">
-                  <span style="font-size:11px;color:var(--text3);flex-shrink:0;margin-top:2px">${i+1}</span>
-                  <span style="font-size:13px;color:var(--text);flex:1;line-height:1.5" class="ttxt">${t.title}</span>
-                  <button class="copy-btn copy-title-btn" data-title="${t.title.replace(/"/g,'&quot;')}" style="padding:3px 10px;font-size:11px;flex-shrink:0">복사</button>
-                </div>
-                ${t.score?`<div style="margin-top:4px;margin-left:19px;font-size:11px;color:var(--gold);font-weight:700">점수: ${t.score} / 10</div>`:''}
-              </div>`).join('');
-            // 복사 이벤트 바인딩
-            titlesEl.querySelectorAll('.copy-title-btn').forEach(btn=>{
-              btn.addEventListener('click',()=>{
-                const txt=btn.getAttribute('data-title');
-                const o=btn.textContent;
-                if(navigator.clipboard&&navigator.clipboard.writeText){
-                  navigator.clipboard.writeText(txt).then(()=>{btn.textContent='복사됨!';setTimeout(()=>{btn.textContent=o},1500);}).catch(()=>{fallbackCopy(txt);btn.textContent='복사됨!';setTimeout(()=>{btn.textContent=o},1500);});
-                } else {fallbackCopy(txt);btn.textContent='복사됨!';setTimeout(()=>{btn.textContent=o},1500);}
-              });
+          if(cur.title)titles.push(cur);
+          const titlesEl=document.getElementById('titles-'+p);
+          titlesEl.innerHTML=titles.map((t,i)=>`
+            <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+              <div style="display:flex;align-items:flex-start;gap:8px">
+                <span style="font-size:11px;color:var(--text3);flex-shrink:0;margin-top:2px">${i+1}</span>
+                <span style="font-size:13px;color:var(--text);flex:1;line-height:1.5" class="ttxt">${t.title}</span>
+                <button class="copy-btn copy-title-btn" data-title="${t.title.replace(/"/g,'&quot;')}" style="padding:3px 10px;font-size:11px;flex-shrink:0">복사</button>
+              </div>
+              ${t.score?`<div style="margin-top:4px;margin-left:19px;font-size:11px;color:var(--gold);font-weight:700">점수: ${t.score} / 10</div>`:''}
+            </div>`).join('');
+          titlesEl.querySelectorAll('.copy-title-btn').forEach(btn=>{
+            btn.addEventListener('click',()=>{
+              const txt=btn.getAttribute('data-title');const o=btn.textContent;
+              if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(()=>{btn.textContent='복사됨!';setTimeout(()=>{btn.textContent=o},1500);}).catch(()=>{fallbackCopy(txt);btn.textContent='복사됨!';setTimeout(()=>{btn.textContent=o},1500);});}
+              else{fallbackCopy(txt);btn.textContent='복사됨!';setTimeout(()=>{btn.textContent=o},1500);}
             });
-            document.getElementById('title-box-'+p).style.display='block';
-          }
+          });
         }
 
+        // 키워드
         if(kwText){
           document.getElementById('kw-'+p).textContent=kwText;
           document.getElementById('kw-box-'+p).style.display='block';

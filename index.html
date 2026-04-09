@@ -223,7 +223,30 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
   padding:4px 12px;border-radius:3px;font-family:'Noto Sans KR',sans-serif;
 }
 
-/* 블로그 자동화 홍보 배너 */
+/* CPA 광고 배너 */
+.ad-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:500px){.ad-grid{grid-template-columns:1fr}}
+.ad-cpa-card{
+  display:block;border-radius:var(--radius-sm);overflow:hidden;
+  background:#fff;border:1px solid #e0e0e0;
+  text-decoration:none;transition:all .2s;
+}
+.ad-cpa-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.3)}
+.ad-cpa-img{
+  width:100%;height:110px;background:#f9f9f9;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.ad-cpa-img img{width:100%;height:100%;object-fit:contain}
+.ad-cpa-bottom{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:7px 10px;background:#fff;border-top:1px solid #eee;
+}
+.ad-order-btn{
+  background:#1a6dff;color:#fff;font-size:11px;font-weight:700;
+  padding:4px 10px;border-radius:3px;font-family:'Noto Sans KR',sans-serif;
+}
+
+
 .promo-banner{
   display:block;margin-top:12px;
   background:var(--bg2);border:1px solid var(--border);
@@ -293,10 +316,8 @@ footer{
   </div>
 
   <!-- 쿠팡 위젯 1 -->
-  <div style="margin-bottom:12px;border-radius:var(--radius-sm);overflow:hidden">
-    <a href="https://link.coupang.com/a/ek8YN8" target="_blank" referrerpolicy="unsafe-url" style="display:block">
-      <img src="https://ads-partners.coupang.com/banners/979417?subId=&traceId=V0-301-371ae01f4226dec2-I979417&w=728&h=90" alt="" style="width:100%;height:auto;display:block">
-    </a>
+  <div style="width:100%;overflow:hidden;margin-bottom:12px">
+    <iframe src="https://ads-partners.coupang.com/widgets.html?id=979545&template=carousel&trackingCode=AF5722914&subId=&width=728&height=190&tsource=" width="100%" height="190" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
   </div>
 
   <!-- STEP 1: 기본 정보 -->
@@ -434,6 +455,28 @@ footer{
   <button class="gen-btn" id="genBtn" onclick="generateAll()">✦ 원고 생성하기</button>
   <div class="err" id="err"></div>
 
+  <!-- CPA 광고 배너 -->
+  <div class="ad-grid" style="margin-top:12px">
+    <a class="ad-cpa-card" href="CPA_LINK_1" target="_blank" rel="noopener">
+      <div class="ad-cpa-img">
+        <img src="CPA_IMG_1" alt="" style="width:100%;height:100%;object-fit:cover;display:block">
+      </div>
+      <div class="ad-cpa-bottom">
+        <span style="color:#c00;font-weight:900;font-size:15px;font-family:Arial,sans-serif">coupang</span>
+        <span class="ad-order-btn">주문하기 ›</span>
+      </div>
+    </a>
+    <a class="ad-cpa-card" href="CPA_LINK_2" target="_blank" rel="noopener">
+      <div class="ad-cpa-img">
+        <img src="CPA_IMG_2" alt="" style="width:100%;height:100%;object-fit:cover;display:block">
+      </div>
+      <div class="ad-cpa-bottom">
+        <span style="color:#c00;font-weight:900;font-size:15px;font-family:Arial,sans-serif">coupang</span>
+        <span class="ad-order-btn">주문하기 ›</span>
+      </div>
+    </a>
+  </div>
+
   <!-- 블로그 자동화 홍보 배너 -->
   <a href="https://zhei-la.github.io/Blog-Auto-promotion/" target="_blank" rel="noopener" class="promo-banner">
     <h3>블로그 자동화 · 대행</h3>
@@ -451,10 +494,8 @@ footer{
   </a>
 
   <!-- 쿠팡 위젯 2 -->
-  <div style="margin-top:12px;border-radius:var(--radius-sm);overflow:hidden">
-    <a href="https://link.coupang.com/a/ek8YN8" target="_blank" referrerpolicy="unsafe-url" style="display:block">
-      <img src="https://ads-partners.coupang.com/banners/979417?subId=&traceId=V0-301-371ae01f4226dec2-I979417&w=728&h=90" alt="" style="width:100%;height:auto;display:block">
-    </a>
+  <div style="width:100%;overflow:hidden;margin-top:12px">
+    <iframe src="https://ads-partners.coupang.com/widgets.html?id=979546&template=carousel&trackingCode=AF5722914&subId=&width=728&height=90&tsource=" width="100%" height="90" frameborder="0" scrolling="no" referrerpolicy="unsafe-url" browsingtopics></iframe>
   </div>
 
   <!-- 결과 -->
@@ -464,15 +505,6 @@ footer{
       <div class="rtabs" id="rtabs"></div>
     </div>
     <div id="rcontents"></div>
-  </div>
-
-  <!-- 쿠팡 CPA 배너 -->
-  <div class="ad-section">
-    <div style="width:100%;overflow:hidden;border-radius:var(--radius-sm)">
-      <a href="https://link.coupang.com/a/ek8YN8" target="_blank" referrerpolicy="unsafe-url" style="display:block">
-        <img src="https://ads-partners.coupang.com/banners/979417?subId=&traceId=V0-301-371ae01f4226dec2-I979417&w=728&h=90" alt="" style="width:100%;height:auto;display:block;border-radius:var(--radius-sm)">
-      </a>
-    </div>
   </div>
 
   <!-- 협업 섹션 -->

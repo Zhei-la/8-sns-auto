@@ -169,7 +169,10 @@ footer{border-top:1px solid var(--border);padding:20px 2rem;text-align:center;fo
     </div>
   </div>
 
-  <button class="gen-btn" id="genBtn" onclick="generate()">
+  <div style="margin-bottom:8px;padding:10px 14px;background:rgba(201,169,110,0.08);border:1px solid rgba(201,169,110,0.2);border-radius:var(--radius-sm);font-size:12px;color:var(--text3);line-height:1.7;">
+  ⚠️ 하루 100회 생성 제한이 있으며, 짧은 시간에 너무 많이 생성하면 일시적으로 제한될 수 있어요
+</div>
+<button class="gen-btn" id="genBtn" onclick="generate()">
     <div class="spin"></div>
     <span class="btn-txt"></span>
   </button>
@@ -473,7 +476,17 @@ async function regenTitles(){
 
 async function callAPI(prompt){
   const r=await fetch('https://cafe-draft-production.up.railway.app/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'user',content:prompt}],temperature:0.85,max_tokens:Math.round(LEN_TOKENS[parseInt(document.getElementById('lengthSlider').value)-1]*2.5)})});
-  if(!r.ok){const e=await r.json();throw new Error(e.error?.message||`HTTP ${r.status}`);}
+  if(!r.ok){
+    const e=await r.json();
+    if(e.error==='cooldown'||e.error==='daily_limit'||e.error==='blocked'){
+      const err = new Error(e.message||'제한됨');
+      err.type = e.error;
+      err.remainSeconds = e.remainSeconds||0;
+      err.violations = e.violations||0;
+      throw err;
+    }
+    throw new Error(e.error?.message||`HTTP ${r.status}`);
+  }
   const d=await r.json();return d.choices[0].message.content.trim();
 }
 
@@ -539,7 +552,16 @@ async function generate(){
     document.getElementById('cafe-result').style.display='block';
   }catch(e){
     let msg='🔧 점검 중입니다 — 빠른 점검 후 돌아오겠습니다';
-    if(e.message.includes('429'))msg='⏳ 요청 한도 초과 — 잠시 후 다시 시도해주세요';
+    if(e.type==='blocked'){
+      msg='🚫 ' + (e.message||'접근이 차단됐어요. 관리자에게 문의해주세요.');
+    } else if(e.type==='cooldown'){
+      msg='⏳ ' + (e.message||'잠시 후 다시 시도해주세요');
+      if(e.remainSeconds>0) startCooldown(e.remainSeconds, btn, originalText||'✦ 글 생성하기');
+    } else if(e.type==='daily_limit'){
+      msg='📵 ' + (e.message||'오늘 한도에 도달했어요');
+    } else if(e.message&&e.message.includes('429')){
+      msg='⏳ 요청 한도 초과 — 잠시 후 다시 시도해주세요';
+    }
     errEl.textContent=msg;errEl.style.display='block';
     document.getElementById('cafe-loading').style.display='none';
   }
@@ -582,6 +604,22 @@ async function genCafeThumbnail(btn){
 function trackCoupang(){fetch('https://cafe-draft-production.up.railway.app/api/track/coupang',{method:'POST'}).catch(()=>{});}
 
 renderCats();renderTones();renderOpts();updateLen();
+
+function startCooldown(seconds, btn, originalText) {
+  if(seconds <= 0) { btn.disabled=false; btn.textContent=originalText; return; }
+  btn.disabled = true;
+  btn.textContent = `⏳ ${seconds}초 후 재시도 가능`;
+  const timer = setInterval(() => {
+    seconds--;
+    if(seconds <= 0) {
+      clearInterval(timer);
+      btn.disabled = false;
+      btn.textContent = originalText;
+    } else {
+      btn.textContent = `⏳ ${seconds}초 후 재시도 가능`;
+    }
+  }, 1000);
+}
 </script>
 </body>
 </html>

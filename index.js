@@ -71,6 +71,15 @@ function detectMalicious(req) {
   return null;
 }
 
+// ── 생성 제한 ──
+const DAILY_LIMIT = 100;       // 하루 최대 생성 횟수
+const BURST_LIMIT = 10;        // 1분에 최대 생성 횟수
+const BURST_WINDOW = 60000;    // 1분
+const dailyGenerateCount = new Map(); // ip+date -> count
+const burstCount = new Map();         // ip -> [timestamps]
+const cooldownIPs = new Map();        // ip -> cooldown 끝나는 시각
+const violationCount = new Map();     // ip -> 위반 횟수
+
 // ── 미들웨어 ──
 app.use((req, res, next) => {
   const ip = getClientIP(req);
@@ -140,6 +149,66 @@ app.post('/api/track/generate', (req, res) => {
 app.post('/api/generate', async (req, res) => {
   const ip = getClientIP(req);
   const today = getToday();
+  const now = Date.now();
+
+  // 쿨다운 체크
+  if(cooldownIPs.has(ip) && cooldownIPs.get(ip) > now) {
+    const remain = Math.ceil((cooldownIPs.get(ip) - now) / 1000);
+    return res.status(429).json({
+      error: 'cooldown',
+      message: `잠시 너무 빠르게 생성했어요! ${remain}초 후에 다시 시도해주세요 🙏`,
+      remainSeconds: remain
+    });
+  }
+
+  // 하루 제한 체크
+  const dayKey = ip + '_' + today;
+  const dayCount = dailyGenerateCount.get(dayKey) || 0;
+  if(dayCount >= DAILY_LIMIT) {
+    const violations = (violationCount.get(ip) || 0) + 1;
+    violationCount.set(ip, violations);
+    if(violations >= 3) {
+      blockedIPs.set(ip, { reason: '일일 한도 반복 초과 (자동 차단)', time: getTime() });
+      securityLogs.push({ time: getTime(), ip, type: '자동 차단', detail: `일일 한도 ${violations}회 위반으로 자동 차단` });
+      return res.status(403).json({
+        error: 'blocked',
+        message: '반복적인 제한 위반으로 접근이 차단됐어요. 관리자에게 문의해주세요.'
+      });
+    }
+    return res.status(429).json({
+      error: 'daily_limit',
+      message: `오늘 생성 한도(100회)에 도달했어요. 내일 다시 이용해주세요 🙏 (경고 ${violations}/3)`,
+      remainSeconds: 0,
+      violations
+    });
+  }
+
+  // 빠른 연속 생성 체크 (1분에 10회)
+  const burst = (burstCount.get(ip) || []).filter(t => now - t < BURST_WINDOW);
+  burst.push(now);
+  burstCount.set(ip, burst);
+  if(burst.length > BURST_LIMIT) {
+    const violations = (violationCount.get(ip) || 0) + 1;
+    violationCount.set(ip, violations);
+    if(violations >= 3) {
+      blockedIPs.set(ip, { reason: '반복 제한 위반 (자동 차단)', time: getTime() });
+      securityLogs.push({ time: getTime(), ip, type: '자동 차단', detail: `제한 ${violations}회 위반으로 자동 차단` });
+      return res.status(403).json({
+        error: 'blocked',
+        message: '반복적인 제한 위반으로 접근이 차단됐어요. 관리자에게 문의해주세요.'
+      });
+    }
+    cooldownIPs.set(ip, now + BURST_WINDOW);
+    return res.status(429).json({
+      error: 'cooldown',
+      message: `잠시 너무 빠르게 생성했어요! 1분 후에 다시 시도해주세요 🙏 (경고 ${violations}/3)`,
+      remainSeconds: 60,
+      violations
+    });
+  }
+
+  // 카운트 증가
+  dailyGenerateCount.set(dayKey, dayCount + 1);
 
   // 글 생성 자동 추적
   totalGenerates++;
@@ -199,7 +268,9 @@ app.get('/api/stats', (req, res) => {
     current_code: ACCESS_CODE,
     code_generated_at: codeGeneratedAt.toISOString(),
     status: 'ok',
-    session_version: SESSION_VERSION
+    session_version: SESSION_VERSION,
+    daily_limit: DAILY_LIMIT,
+    burst_limit: BURST_LIMIT
   });
 });
 

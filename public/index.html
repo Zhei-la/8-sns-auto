@@ -81,12 +81,20 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99;}
 
 @media(max-width:768px){
-  .sidebar{left:-220px;transition:left .3s ease;top:56px;min-height:calc(100vh - 56px);}
+  .sidebar{
+    position:fixed;
+    left:-220px;
+    top:56px;
+    height:calc(100vh - 56px);
+    z-index:200;
+    transition:left .3s ease;
+    box-shadow:4px 0 20px rgba(0,0,0,0.5);
+  }
   .sidebar.open{left:0;}
   .sidebar-overlay.show{display:block;}
-  .main-content{margin-left:0;}
+  .main-content{margin-left:0 !important;width:100%;}
   .mobile-top{display:flex;}
-  #welcomeScreen{padding:20px 16px;align-items:flex-start;min-height:calc(100vh - 56px);}
+  #welcomeScreen{padding:20px 16px;align-items:flex-start;justify-content:center;min-height:calc(100vh - 56px);overflow-y:auto;}
   .welcome-inner{max-width:100%;}
   .welcome-h1{font-size:24px;}
   #iframeWrap{height:calc(100vh - 56px);}
@@ -175,7 +183,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
   <div id="welcomeScreen">
     <div class="welcome-inner">
       <div class="welcome-badge"><span></span>AI 반자동 콘텐츠 생성기</div>
-      <div class="welcome-h1">8SNS 원고,<br><em>한 곳에서</em> 생성하세요</div>
+      <div class="welcome-h1">8개의 SNS<br><em>한 곳에서</em> 생성하세요</div>
       <div class="welcome-p">왼쪽 메뉴에서 플랫폼을 선택하면<br>AI가 맞춤 원고를 작성해드려요</div>
 
       <!-- 코드 문의 - 맨 위 -->

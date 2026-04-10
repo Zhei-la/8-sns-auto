@@ -1,7 +1,35 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const app = express();
+
+// ── 코드 파일 경로 ──
+const CODE_FILE = '/data/codes.json';
+
+function loadCodes() {
+  try {
+    if(fs.existsSync(CODE_FILE)) {
+      const data = JSON.parse(fs.readFileSync(CODE_FILE, 'utf8'));
+      return data;
+    }
+  } catch(e) {}
+  return null;
+}
+
+function saveCodes(freeCode, paidCode, version, generatedAt) {
+  try {
+    fs.mkdirSync('/data', { recursive: true });
+    fs.writeFileSync(CODE_FILE, JSON.stringify({
+      free_code: freeCode,
+      paid_code: paidCode,
+      version: version,
+      generated_at: generatedAt
+    }));
+  } catch(e) {
+    console.error('[코드 저장 실패]', e.message);
+  }
+}
 
 app.use(cors());
 app.use(express.json());
@@ -15,10 +43,20 @@ const securityLogs = [];
 const RATE_LIMIT = 100;
 
 // ── 코드 + 통계 ──
-let FREE_CODE = process.env.FREE_CODE || generateCode();
-let PAID_CODE = process.env.PAID_CODE || generateCode();
-let codeGeneratedAt = new Date();
-let SESSION_VERSION = 1; // 초기화할 때마다 증가
+// 저장된 코드 불러오기
+const savedCodes = loadCodes();
+let FREE_CODE = savedCodes?.free_code || process.env.FREE_CODE || generateCode();
+let PAID_CODE = savedCodes?.paid_code || process.env.PAID_CODE || generateCode();
+let codeGeneratedAt = savedCodes?.generated_at ? new Date(savedCodes.generated_at) : new Date();
+let SESSION_VERSION = savedCodes?.version || 1;
+
+// 처음 시작 시 파일 없으면 저장
+if(!savedCodes) {
+  saveCodes(FREE_CODE, PAID_CODE, SESSION_VERSION, codeGeneratedAt.toISOString());
+  console.log(`[코드 초기화] 무료: ${FREE_CODE} / 유료: ${PAID_CODE}`);
+} else {
+  console.log(`[코드 불러오기] 무료: ${FREE_CODE} / 유료: ${PAID_CODE}`);
+}
 const codeUsageLogs = []; // {ip, time}
 const generateLogs = []; // {ip, time} - 글 생성 횟수
 const dailyGenerates = new Map(); // date -> Set of ips (중복 포함 count)
@@ -46,18 +84,7 @@ function getClientIP(req) {
   return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.connection.remoteAddress;
 }
 
-// 매월 1일 자동 코드 재생성
-function checkMonthlyReset() {
-  const now = new Date();
-  const lastGen = new Date(codeGeneratedAt);
-  if(now.getMonth() !== lastGen.getMonth() || now.getFullYear() !== lastGen.getFullYear()) {
-    FREE_CODE = generateCode();
-    PAID_CODE = generateCode();
-    codeGeneratedAt = now;
-    console.log(`[코드 재생성] 무료: ${FREE_CODE} / 유료: ${PAID_CODE}`);
-  }
-}
-setInterval(checkMonthlyReset, 1000 * 60 * 60); // 1시간마다 체크
+// 자동 재생성 없음 - 대시보드에서 수동 재생성
 
 // ── 보안 ──
 const sqlPatterns = /(\bSELECT\b|\bINSERT\b|\bDROP\b|\bUNION\b|--|;--|'--)/i;
@@ -368,12 +395,14 @@ app.post('/api/code/regenerate', adminAuth, (req, res) => {
   PAID_CODE = generateCode();
   codeGeneratedAt = new Date();
   SESSION_VERSION++;
+  saveCodes(FREE_CODE, PAID_CODE, SESSION_VERSION, codeGeneratedAt.toISOString());
   res.json({ success: true, free_code: FREE_CODE, paid_code: PAID_CODE, version: SESSION_VERSION });
 });
 
 // 세션 초기화 (코드는 유지, 버전만 올리기)
 app.post('/api/session/reset', adminAuth, (req, res) => {
   SESSION_VERSION++;
+  saveCodes(FREE_CODE, PAID_CODE, SESSION_VERSION, codeGeneratedAt.toISOString());
   console.log('[세션 초기화] 버전:', SESSION_VERSION);
   res.json({ success: true, version: SESSION_VERSION });
 });

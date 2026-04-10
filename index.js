@@ -15,7 +15,8 @@ const securityLogs = [];
 const RATE_LIMIT = 100;
 
 // ── 코드 + 통계 ──
-let ACCESS_CODE = process.env.ACCESS_CODE || generateCode();
+let FREE_CODE = process.env.FREE_CODE || generateCode();
+let PAID_CODE = process.env.PAID_CODE || generateCode();
 let codeGeneratedAt = new Date();
 let SESSION_VERSION = 1; // 초기화할 때마다 증가
 const codeUsageLogs = []; // {ip, time}
@@ -50,9 +51,10 @@ function checkMonthlyReset() {
   const now = new Date();
   const lastGen = new Date(codeGeneratedAt);
   if(now.getMonth() !== lastGen.getMonth() || now.getFullYear() !== lastGen.getFullYear()) {
-    ACCESS_CODE = generateCode();
+    FREE_CODE = generateCode();
+    PAID_CODE = generateCode();
     codeGeneratedAt = now;
-    console.log(`[코드 재생성] 새 코드: ${ACCESS_CODE}`);
+    console.log(`[코드 재생성] 무료: ${FREE_CODE} / 유료: ${PAID_CODE}`);
   }
 }
 setInterval(checkMonthlyReset, 1000 * 60 * 60); // 1시간마다 체크
@@ -123,11 +125,17 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.post('/api/verify-code', (req, res) => {
   const { code } = req.body;
   const ip = getClientIP(req);
-  if(code && code.trim().toUpperCase() === ACCESS_CODE) {
+  const upperCode = code ? code.trim().toUpperCase() : '';
+
+  let plan = null;
+  if(upperCode === FREE_CODE) plan = 'free';
+  else if(upperCode === PAID_CODE) plan = 'paid';
+
+  if(plan) {
     const today = getToday();
     const already = codeUsageLogs.find(l => l.ip === ip && l.date === today);
-    if(!already) codeUsageLogs.push({ ip, time: getTime(), date: today });
-    res.json({ success: true, version: SESSION_VERSION });
+    if(!already) codeUsageLogs.push({ ip, time: getTime(), date: today, plan });
+    res.json({ success: true, version: SESSION_VERSION, plan });
   } else {
     securityLogs.push({ time: getTime(), ip, type: '코드 오류', detail: `잘못된 코드 입력: ${code}` });
     res.json({ success: false });
@@ -265,7 +273,8 @@ app.get('/api/stats', (req, res) => {
     total_coupang_clicks: coupangClicks.total,
     blocked_ips: blockedIPs.size,
     weekly_visitors: weekly,
-    current_code: ACCESS_CODE,
+    free_code: FREE_CODE,
+    paid_code: PAID_CODE,
     code_generated_at: codeGeneratedAt.toISOString(),
     status: 'ok',
     session_version: SESSION_VERSION,
@@ -343,7 +352,8 @@ app.get('/api/code/current', adminAuth, (req, res) => {
 
   res.json({
     success: true,
-    code: ACCESS_CODE,
+    free_code: FREE_CODE,
+    paid_code: PAID_CODE,
     generated_at: codeGeneratedAt.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
     today_visitors: dailyVisitors.get(today)?.size || 0,
     today_code_users: todayUsers,
@@ -354,10 +364,11 @@ app.get('/api/code/current', adminAuth, (req, res) => {
 });
 
 app.post('/api/code/regenerate', adminAuth, (req, res) => {
-  ACCESS_CODE = generateCode();
+  FREE_CODE = generateCode();
+  PAID_CODE = generateCode();
   codeGeneratedAt = new Date();
   SESSION_VERSION++;
-  res.json({ success: true, code: ACCESS_CODE, version: SESSION_VERSION });
+  res.json({ success: true, free_code: FREE_CODE, paid_code: PAID_CODE, version: SESSION_VERSION });
 });
 
 // 세션 초기화 (코드는 유지, 버전만 올리기)

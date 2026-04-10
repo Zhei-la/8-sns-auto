@@ -336,24 +336,7 @@ footer{
 #mainApp{display:none;}
 </style>
 </head>
-<!-- 코드 게이트 -->
-<div id="codeGate">
-  <div class="gate-box">
-    <div class="gate-logo">Zheila AI Auto</div>
-    <div class="gate-sub">AI 체험단·기자단 원고 생성기</div>
-    <div class="gate-card">
-      <div class="gate-label">이용 코드를 입력해주세요<br>코드는 매월 갱신됩니다</div>
-      <input type="text" class="gate-input" id="codeInput" placeholder="코드 입력" maxlength="9"
-        oninput="formatCode(this)" onkeydown="if(event.key==='Enter')tryEnter()"
-        autocomplete="off" autocorrect="off" spellcheck="false" />
-      <button class="gate-btn" id="gateBtn" onclick="tryEnter()">입장하기</button>
-      <div class="gate-err" id="gateErr">❌ 코드가 올바르지 않아요</div>
-    </div>
-  </div>
-</div>
 
-<!-- 메인 앱 -->
-<div id="mainApp">
 <main class="main">
 
   <!-- HERO -->
@@ -522,80 +505,10 @@ footer{
   <span style="font-size:11px">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다</span><br>
   <strong style="color:var(--text2)">Zheila AI Auto</strong> — AI 체험단·기자단 원고 생성기
 </footer>
-</div><!-- /mainApp -->
 
 <script>
 
-// ── 코드 게이트 ──
-const SESSION_KEY = 'zheila_blog_code';
-const SESSION_VER_KEY = 'zheila_blog_ver';
-const SERVER_URL = 'https://blog-draft-production.up.railway.app';
 
-(async function autoVerify() {
-  const saved = localStorage.getItem(SESSION_KEY);
-  const savedVer = localStorage.getItem(SESSION_VER_KEY);
-  if(!saved) return;
-  try {
-    const res = await fetch(SERVER_URL + '/api/verify-code', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({code: saved})
-    });
-    const data = await res.json();
-    if(data.success && String(data.version) === String(savedVer)) {
-      showApp();
-    } else {
-      // 버전 다르면(세션 초기화) 또는 코드 틀리면 삭제
-      localStorage.removeItem(SESSION_KEY);
-      localStorage.removeItem(SESSION_VER_KEY);
-    }
-  } catch(e) {}
-})();
-
-function formatCode(el) {
-  let v = el.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-  if(v.length > 4) v = v.slice(0,4) + '-' + v.slice(4,8);
-  el.value = v;
-}
-
-async function tryEnter() {
-  const code = document.getElementById('codeInput').value.trim();
-  const btn = document.getElementById('gateBtn');
-  const err = document.getElementById('gateErr');
-  if(!code) return;
-  btn.disabled = true;
-  btn.textContent = '확인 중...';
-  err.style.display = 'none';
-  try {
-    const res = await fetch(SERVER_URL + '/api/verify-code', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({code})
-    });
-    const data = await res.json();
-    if(data.success) {
-      localStorage.setItem(SESSION_KEY, code);
-      localStorage.setItem(SESSION_VER_KEY, data.version);
-      showApp();
-    } else {
-      err.style.display = 'block';
-      btn.disabled = false;
-      btn.textContent = '입장하기';
-      document.getElementById('codeInput').value = '';
-      document.getElementById('codeInput').focus();
-    }
-  } catch(e) {
-    err.textContent = '❌ 서버 오류. 잠시 후 다시 시도해주세요';
-    err.style.display = 'block';
-    btn.disabled = false;
-    btn.textContent = '입장하기';
-  }
-}
-
-function showApp() {
-  document.getElementById('codeGate').style.display = 'none';
-  document.getElementById('mainApp').style.display = 'block';
-}
 
 async function searchPlace(){
   const place = document.getElementById('place').value.trim();

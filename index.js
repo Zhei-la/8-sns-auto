@@ -104,8 +104,11 @@ app.use((req, res, next) => {
 });
 
 // ── HTML 서빙 ──
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.get('/security', (req, res) => res.sendFile(path.join(__dirname, 'security_admin.html')));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/blog', (req, res) => res.sendFile(path.join(__dirname, 'public', 'blog.html')));
+app.get('/cafe', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cafe.html')));
+app.get('/security', (req, res) => res.sendFile(path.join(__dirname, 'public', 'security_admin.html')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ── 코드 검증 ──
 app.post('/api/verify-code', (req, res) => {
@@ -295,4 +298,3 @@ app.post('/api/session/reset', adminAuth, (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-

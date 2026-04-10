@@ -7,63 +7,91 @@
 <title>Zheila AI Auto — 8SNS 반자동 생성기</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0e0e0f;--bg2:#161618;--bg3:#1e1e21;--bg4:#252528;--gold:#c9a96e;--gold2:#e8c98a;--gold-dim:rgba(201,169,110,0.12);--gold-border:rgba(201,169,110,0.25);--text:#f0ede8;--text2:#9e9b95;--text3:#5a5855;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--radius:14px;--radius-sm:8px;}
+:root{--bg:#0e0e0f;--bg2:#161618;--bg3:#1e1e21;--bg4:#252528;--gold:#c9a96e;--gold2:#e8c98a;--gold-dim:rgba(201,169,110,0.12);--gold-border:rgba(201,169,110,0.25);--text:#f0ede8;--text2:#9e9b95;--text3:#5a5855;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--radius:14px;--radius-sm:8px;--sidebar-w:220px;}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;line-height:1.6}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;display:flex;}
 
-/* 코드 게이트 */
-#codeGate{display:none;position:fixed;inset:0;background:var(--bg);z-index:500;align-items:center;justify-content:center;padding:24px;}
+/* ── 코드 게이트 ── */
+#codeGate{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);}
 #codeGate.show{display:flex;}
-.gate-box{width:100%;max-width:400px;text-align:center;}
-.gate-logo{font-family:'Noto Serif KR',serif;font-size:22px;font-weight:700;color:var(--gold);margin-bottom:8px;}
-.gate-sns{font-size:28px;margin-bottom:6px;}
-.gate-name{font-size:16px;font-weight:700;margin-bottom:32px;}
-.gate-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:32px 24px;}
-.gate-label{font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.8;}
-.gate-input{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:14px 16px;font-family:monospace;font-size:18px;font-weight:700;color:var(--text);outline:none;text-align:center;letter-spacing:4px;text-transform:uppercase;transition:border-color .2s;margin-bottom:12px;}
+.gate-box{width:100%;max-width:380px;text-align:center;}
+.gate-logo{font-family:'Noto Serif KR',serif;font-size:18px;font-weight:700;color:var(--gold);margin-bottom:6px;}
+.gate-sns-icon{font-size:32px;margin-bottom:6px;}
+.gate-sns-name{font-size:15px;font-weight:700;margin-bottom:28px;}
+.gate-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;}
+.gate-label{font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.8;}
+.gate-input{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:13px 16px;font-family:monospace;font-size:18px;font-weight:700;color:var(--text);outline:none;text-align:center;letter-spacing:4px;text-transform:uppercase;transition:border-color .2s;margin-bottom:10px;}
 .gate-input:focus{border-color:var(--gold-border);}
-.gate-input::placeholder{font-size:13px;letter-spacing:1px;font-weight:300;font-family:'Noto Sans KR',sans-serif;color:var(--text3);}
-.gate-btn{width:100%;padding:14px;background:var(--gold);color:#0e0e0f;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-bottom:10px;}
+.gate-input::placeholder{font-size:12px;letter-spacing:1px;font-weight:300;font-family:'Noto Sans KR',sans-serif;color:var(--text3);}
+.gate-btn{width:100%;padding:13px;background:var(--gold);color:#0e0e0f;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-bottom:10px;}
 .gate-btn:disabled{opacity:.4;cursor:not-allowed;}
-.gate-back{font-size:12px;color:var(--text3);cursor:pointer;text-decoration:underline;}
-.gate-err{display:none;margin-top:12px;font-size:13px;color:#e57373;padding:10px;background:rgba(229,115,115,0.08);border:1px solid rgba(229,115,115,0.2);border-radius:var(--radius-sm);}
+.gate-back{font-size:12px;color:var(--text3);cursor:pointer;}
+.gate-back:hover{color:var(--text2);}
+.gate-err{display:none;margin-top:10px;font-size:12px;color:#e57373;padding:8px 12px;background:rgba(229,115,115,0.08);border:1px solid rgba(229,115,115,0.2);border-radius:var(--radius-sm);}
 
-/* 메인 */
-.main{max-width:600px;margin:0 auto;padding:48px 20px 80px;}
-.hero{text-align:center;margin-bottom:40px;}
-.hero-badge{display:inline-flex;align-items:center;gap:6px;background:var(--gold-dim);border:1px solid var(--gold-border);border-radius:99px;padding:5px 14px;font-size:11px;color:var(--gold);font-weight:500;margin-bottom:20px;}
-.hero-badge span{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse 2s infinite;display:inline-block;}
-.hero h1{font-family:'Noto Serif KR',serif;font-size:clamp(26px,5vw,38px);font-weight:700;line-height:1.3;margin-bottom:10px;}
-.hero h1 em{font-style:normal;color:var(--gold);}
-.hero p{font-size:14px;color:var(--text2);}
+/* ── 사이드바 ── */
+.sidebar{width:var(--sidebar-w);background:var(--bg2);border-right:1px solid var(--border);min-height:100vh;display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100;}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--border);}
+.logo-title{font-family:'Noto Serif KR',serif;font-size:15px;font-weight:700;color:var(--gold);margin-bottom:2px;}
+.logo-sub{font-size:10px;color:var(--text3);}
+.sidebar-nav{flex:1;padding:12px 8px;overflow-y:auto;}
+.nav-section{font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;padding:8px 8px 4px;margin-top:8px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:var(--radius-sm);cursor:pointer;transition:all .15s;font-size:13px;color:var(--text2);margin-bottom:2px;}
+.nav-item:hover{background:var(--bg3);color:var(--text);}
+.nav-item.active{background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold-border);}
+.nav-item.disabled{opacity:.4;cursor:default;}
+.nav-item.disabled:hover{background:transparent;color:var(--text2);}
+.nav-icon{font-size:16px;flex-shrink:0;}
+.nav-soon{font-size:9px;color:var(--text3);margin-left:auto;background:var(--bg4);padding:2px 6px;border-radius:10px;}
 
-/* SNS 그리드 */
-.sns-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
-@media(max-width:400px){.sns-grid{grid-template-columns:1fr;}}
+/* ── 메인 콘텐츠 ── */
+.main-content{margin-left:var(--sidebar-w);flex:1;min-height:100vh;}
 
-.sns-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:24px 20px;cursor:pointer;transition:all .2s;text-align:center;position:relative;}
-.sns-card:hover{border-color:var(--border2);transform:translateY(-2px);}
-.sns-card.active{border-color:var(--gold-border);background:var(--bg3);}
-.sns-card.disabled{opacity:.5;cursor:default;}
-.sns-card.disabled:hover{transform:none;border-color:var(--border);}
-.sns-icon{font-size:36px;margin-bottom:12px;display:block;}
-.sns-name{font-size:15px;font-weight:700;margin-bottom:4px;}
-.sns-desc{font-size:12px;color:var(--text3);}
-.sns-badge{position:absolute;top:10px;right:10px;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;}
-.badge-available{background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold-border);}
-.badge-soon{background:rgba(255,255,255,0.05);color:var(--text3);border:1px solid var(--border);}
+/* ── 시작 화면 ── */
+#welcomeScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:40px 32px;overflow-y:auto;}
+.welcome-inner{text-align:center;width:100%;max-width:640px;}
+.welcome-badge{display:inline-flex;align-items:center;gap:6px;background:var(--gold-dim);border:1px solid var(--gold-border);border-radius:99px;padding:5px 14px;font-size:11px;color:var(--gold);font-weight:500;margin-bottom:24px;}
+.welcome-badge span{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse 2s infinite;display:inline-block;}
+.welcome-h1{font-family:'Noto Serif KR',serif;font-size:clamp(26px,3vw,40px);font-weight:700;line-height:1.3;margin-bottom:12px;}
+.welcome-h1 em{font-style:normal;color:var(--gold);}
+.welcome-p{font-size:14px;color:var(--text2);line-height:1.8;}
+.welcome-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:32px;}
+.welcome-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;cursor:pointer;transition:all .2s;text-align:center;}
+.welcome-card:hover{border-color:var(--gold-border);transform:translateY(-2px);}
+.welcome-card-icon{font-size:28px;margin-bottom:8px;}
+.welcome-card-name{font-size:14px;font-weight:700;margin-bottom:4px;}
+.welcome-card-desc{font-size:11px;color:var(--text3);}
 
-/* 준비중 모달 */
-#comingSoon{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:400;align-items:center;justify-content:center;}
-#comingSoon.show{display:flex;}
-.soon-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:40px;text-align:center;max-width:340px;width:90%;}
-.soon-icon{font-size:48px;margin-bottom:16px;}
-.soon-title{font-family:'Noto Serif KR',serif;font-size:20px;font-weight:700;margin-bottom:8px;}
-.soon-desc{font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.8;}
-.soon-close{padding:10px 28px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text2);font-size:13px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;}
+/* ── iframe 콘텐츠 ── */
+#iframeWrap{display:none;width:100%;height:100vh;}
+#contentFrame{width:100%;height:100%;border:none;}
 
-footer{text-align:center;padding:32px;font-size:12px;color:var(--text3);}
-footer strong{color:var(--gold);font-weight:500;}
+/* ── 준비중 화면 ── */
+#comingSoonScreen{display:none;align-items:center;justify-content:center;min-height:100vh;}
+.soon-inner{text-align:center;}
+.soon-icon{font-size:64px;margin-bottom:20px;}
+.soon-title{font-family:'Noto Serif KR',serif;font-size:24px;font-weight:700;margin-bottom:10px;}
+.soon-desc{font-size:14px;color:var(--text2);line-height:1.8;}
+
+/* ── 모바일 ── */
+.mobile-top{display:none;height:56px;background:var(--bg2);border-bottom:1px solid var(--border);align-items:center;padding:0 16px;gap:12px;position:sticky;top:0;z-index:200;}
+.mobile-menu-btn{width:36px;height:36px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;flex-shrink:0;}
+.mobile-menu-btn span{width:16px;height:2px;background:var(--text);border-radius:2px;display:block;}
+.mobile-title{font-size:14px;font-weight:700;color:var(--gold);}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99;}
+
+@media(max-width:768px){
+  .sidebar{left:-220px;transition:left .3s ease;top:56px;min-height:calc(100vh - 56px);}
+  .sidebar.open{left:0;}
+  .sidebar-overlay.show{display:block;}
+  .main-content{margin-left:0;}
+  .mobile-top{display:flex;}
+  #welcomeScreen{padding:20px 16px;align-items:flex-start;min-height:calc(100vh - 56px);}
+  .welcome-inner{max-width:100%;}
+  .welcome-h1{font-size:24px;}
+  #iframeWrap{height:calc(100vh - 56px);}
+  #comingSoonScreen{min-height:calc(100vh - 56px);}
+}
 
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 </style>
@@ -74,8 +102,8 @@ footer strong{color:var(--gold);font-weight:500;}
 <div id="codeGate">
   <div class="gate-box">
     <div class="gate-logo">Zheila AI Auto</div>
-    <div class="gate-sns" id="gateSnsIcon"></div>
-    <div class="gate-name" id="gateSnsName"></div>
+    <div class="gate-sns-icon" id="gateSnsIcon"></div>
+    <div class="gate-sns-name" id="gateSnsName"></div>
     <div class="gate-card">
       <div class="gate-label">이용 코드를 입력해주세요<br>코드는 매월 갱신됩니다</div>
       <input type="text" class="gate-input" id="codeInput" placeholder="코드 입력" maxlength="9"
@@ -88,79 +116,119 @@ footer strong{color:var(--gold);font-weight:500;}
   </div>
 </div>
 
-<!-- 준비중 모달 -->
-<div id="comingSoon">
-  <div class="soon-box">
-    <div class="soon-icon" id="soonIcon"></div>
-    <div class="soon-title" id="soonTitle"></div>
-    <div class="soon-desc">현재 열심히 개발 중이에요!<br>조금만 기다려주세요 🙏</div>
-    <button class="soon-close" onclick="document.getElementById('comingSoon').classList.remove('show')">확인</button>
+<!-- 사이드바 오버레이 -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- 모바일 상단 -->
+<div class="mobile-top">
+  <div class="mobile-menu-btn" onclick="toggleSidebar()">
+    <span></span><span></span><span></span>
   </div>
+  <div class="mobile-title" id="mobileTitle">Zheila AI Auto</div>
 </div>
 
-<!-- 메인 -->
-<div class="main">
-  <div class="hero">
-    <div class="hero-badge"><span></span>AI 반자동 콘텐츠 생성기</div>
-    <h1>8SNS 원고,<br><em>한 곳에서</em> 생성하세요</h1>
-    <p>플랫폼을 선택하면 AI가 맞춤 원고를 작성해드려요</p>
+<!-- 사이드바 -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-title">Zheila AI Auto</div>
+    <div class="logo-sub">8SNS 반자동 생성기</div>
   </div>
-
-  <div class="sns-grid">
-    <div class="sns-card active" onclick="enterSns('blog')">
-      <span class="sns-badge badge-available">사용 가능</span>
-      <span class="sns-icon">📝</span>
-      <div class="sns-name">네이버 블로그</div>
-      <div class="sns-desc">체험단·기자단 원고 생성</div>
+  <div class="sidebar-nav">
+    <div class="nav-section">사용 가능</div>
+    <div class="nav-item" id="nav-blog" onclick="enterSns('blog')">
+      <span class="nav-icon">📝</span> 네이버 블로그
     </div>
-    <div class="sns-card active" onclick="enterSns('cafe')">
-      <span class="sns-badge badge-available">사용 가능</span>
-      <span class="sns-icon">☕</span>
-      <div class="sns-name">네이버 카페</div>
-      <div class="sns-desc">카페 맞춤 글 생성</div>
+    <div class="nav-item" id="nav-cafe" onclick="enterSns('cafe')">
+      <span class="nav-icon">☕</span> 네이버 카페
     </div>
-    <div class="sns-card disabled" onclick="showSoon('🧵','스레드')">
-      <span class="sns-badge badge-soon">준비중</span>
-      <span class="sns-icon">🧵</span>
-      <div class="sns-name">스레드</div>
-      <div class="sns-desc">Threads 게시물 생성</div>
+    <div class="nav-section">준비중</div>
+    <div class="nav-item disabled" onclick="showSoon('🧵','스레드')">
+      <span class="nav-icon">🧵</span> 스레드
+      <span class="nav-soon">준비중</span>
     </div>
-    <div class="sns-card disabled" onclick="showSoon('📸','인스타 릴스')">
-      <span class="sns-badge badge-soon">준비중</span>
-      <span class="sns-icon">📸</span>
-      <div class="sns-name">인스타 릴스</div>
-      <div class="sns-desc">릴스 스크립트 생성</div>
+    <div class="nav-item disabled" onclick="showSoon('📸','인스타 릴스')">
+      <span class="nav-icon">📸</span> 인스타 릴스
+      <span class="nav-soon">준비중</span>
     </div>
-    <div class="sns-card disabled" onclick="showSoon('🎥','유튜브')">
-      <span class="sns-badge badge-soon">준비중</span>
-      <span class="sns-icon">🎥</span>
-      <div class="sns-name">유튜브</div>
-      <div class="sns-desc">영상 스크립트 생성</div>
+    <div class="nav-item disabled" onclick="showSoon('🎥','유튜브')">
+      <span class="nav-icon">🎥</span> 유튜브
+      <span class="nav-soon">준비중</span>
     </div>
-    <div class="sns-card disabled" onclick="showSoon('🎵','틱톡')">
-      <span class="sns-badge badge-soon">준비중</span>
-      <span class="sns-icon">🎵</span>
-      <div class="sns-name">틱톡</div>
-      <div class="sns-desc">숏폼 스크립트 생성</div>
+    <div class="nav-item disabled" onclick="showSoon('🎵','틱톡')">
+      <span class="nav-icon">🎵</span> 틱톡
+      <span class="nav-soon">준비중</span>
     </div>
-    <div class="sns-card disabled" onclick="showSoon('🥕','당근 카페')">
-      <span class="sns-badge badge-soon">준비중</span>
-      <span class="sns-icon">🥕</span>
-      <div class="sns-name">당근 카페</div>
-      <div class="sns-desc">당근 커뮤니티 글 생성</div>
+    <div class="nav-item disabled" onclick="showSoon('🥕','당근 카페')">
+      <span class="nav-icon">🥕</span> 당근 카페
+      <span class="nav-soon">준비중</span>
     </div>
-    <div class="sns-card disabled" onclick="showSoon('💬','카톡 커뮤')">
-      <span class="sns-badge badge-soon">준비중</span>
-      <span class="sns-icon">💬</span>
-      <div class="sns-name">카톡 커뮤</div>
-      <div class="sns-desc">오픈채팅 커뮤 글 생성</div>
+    <div class="nav-item disabled" onclick="showSoon('💬','카톡 커뮤')">
+      <span class="nav-icon">💬</span> 카톡 커뮤
+      <span class="nav-soon">준비중</span>
     </div>
   </div>
 </div>
 
-<footer>
-  <strong>Zheila AI Auto</strong> — 8SNS 반자동 콘텐츠 생성기
-</footer>
+<!-- 메인 콘텐츠 -->
+<div class="main-content">
+  <!-- 시작 화면 -->
+  <div id="welcomeScreen">
+    <div class="welcome-inner">
+      <div class="welcome-badge"><span></span>AI 반자동 콘텐츠 생성기</div>
+      <div class="welcome-h1">8SNS 원고,<br><em>한 곳에서</em> 생성하세요</div>
+      <div class="welcome-p">왼쪽 메뉴에서 플랫폼을 선택하면<br>AI가 맞춤 원고를 작성해드려요</div>
+
+      <!-- 코드 문의 - 맨 위 -->
+      <div style="margin-top:28px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:22px;text-align:center;">
+        <div style="font-family:'Noto Serif KR',serif;font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;">이용 코드 문의</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.8;">이용 코드는 카카오로 문의해주세요<br>매월 갱신되며 재발급도 가능합니다</div>
+        <a href="https://open.kakao.com/o/sdwT0Zoi" target="_blank" style="display:inline-flex;align-items:center;gap:7px;background:var(--gold);color:#0e0e0f;padding:11px 28px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;text-decoration:none;">💬 코드 문의하기</a>
+      </div>
+
+      <!-- 블로그 자동화 배너 -->
+      <div style="margin-top:12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:22px;text-align:center;">
+        <div style="font-family:'Noto Serif KR',serif;font-size:16px;font-weight:700;color:var(--gold);margin-bottom:6px;">블로그 자동화 · 대행</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:12px;">글 작성부터 발행, 공감, 댓글, 서로이웃까지<br>블로그 운영 전체를 자동으로 관리합니다</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;justify-content:center;">
+          <span style="padding:3px 10px;border-radius:99px;border:1px solid rgba(255,255,255,0.12);font-size:11px;background:var(--bg3);color:var(--text2);">🏪 가게·매장 운영자</span>
+          <span style="padding:3px 10px;border-radius:99px;border:1px solid rgba(255,255,255,0.12);font-size:11px;background:var(--bg3);color:var(--text2);">💼 사업자·자영업자</span>
+          <span style="padding:3px 10px;border-radius:99px;border:1px solid rgba(255,255,255,0.12);font-size:11px;background:var(--bg3);color:var(--text2);">🏥 병원·클리닉·학원</span>
+          <span style="padding:3px 10px;border-radius:99px;border:1px solid rgba(255,255,255,0.12);font-size:11px;background:var(--bg3);color:var(--text2);">📊 금융·부동산 종사자</span>
+          <span style="padding:3px 10px;border-radius:99px;border:1px solid rgba(255,255,255,0.12);font-size:11px;background:var(--bg3);color:var(--text2);">🛡️ 보험·재무 컨설팅</span>
+          <span style="padding:3px 10px;border-radius:99px;border:1px solid rgba(255,255,255,0.12);font-size:11px;background:var(--bg3);color:var(--text2);">🛍️ 온라인 쇼핑몰</span>
+          <span style="padding:3px 10px;border-radius:99px;border:1px solid rgba(255,255,255,0.12);font-size:11px;background:var(--bg3);color:var(--text2);">✍️ 글 쓸 시간 없는 분</span>
+        </div>
+        <a href="https://zhei-la.github.io/Blog-Auto-promotion/#agency" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:var(--gold);color:#0e0e0f;padding:11px 28px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;text-decoration:none;">자세히 보기 →</a>
+      </div>
+
+      <!-- 협업 문의 -->
+      <div style="margin-top:12px;margin-bottom:40px;background:var(--bg2);border:1px solid rgba(201,169,110,0.25);border-radius:var(--radius);padding:22px;text-align:center;">
+        <div style="font-family:'Noto Serif KR',serif;font-size:16px;font-weight:700;color:var(--gold);margin-bottom:6px;">협업 및 제휴 문의</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.8;">광고 제휴, 기능 추가, 맞춤형 툴 제작 등<br>뭐든 편하게 말씀해주세요</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px;">
+          <span style="padding:3px 10px;border-radius:99px;border:1px solid rgba(201,169,110,0.25);font-size:11px;background:rgba(201,169,110,0.12);color:var(--gold);">📢 광고 제휴</span>
+          <span style="padding:3px 10px;border-radius:99px;border:1px solid rgba(201,169,110,0.25);font-size:11px;background:rgba(201,169,110,0.12);color:var(--gold);">🛠️ 기능 커스텀</span>
+          <span style="padding:3px 10px;border-radius:99px;border:1px solid rgba(201,169,110,0.25);font-size:11px;background:rgba(201,169,110,0.12);color:var(--gold);">🤝 마케팅 협업</span>
+        </div>
+        <a href="https://open.kakao.com/o/siUe7xpi" target="_blank" style="display:inline-flex;align-items:center;gap:7px;background:var(--gold);color:#0e0e0f;padding:11px 28px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;text-decoration:none;">💬 카카오톡으로 문의하기</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- iframe -->
+  <div id="iframeWrap">
+    <iframe id="contentFrame" src=""></iframe>
+  </div>
+
+  <!-- 준비중 -->
+  <div id="comingSoonScreen">
+    <div class="soon-inner">
+      <div class="soon-icon" id="soonIcon"></div>
+      <div class="soon-title" id="soonTitle"></div>
+      <div class="soon-desc">현재 열심히 개발 중이에요!<br>조금만 기다려주세요 🙏</div>
+    </div>
+  </div>
+</div>
 
 <script>
 const SERVER_URL = window.location.origin;
@@ -170,11 +238,24 @@ const SNS_CONFIG = {
 };
 let currentSns = null;
 
+function showScreen(screen) {
+  document.getElementById('welcomeScreen').style.display = 'none';
+  document.getElementById('iframeWrap').style.display = 'none';
+  document.getElementById('comingSoonScreen').style.display = 'none';
+  document.getElementById(screen).style.display = 'flex';
+}
+
 async function enterSns(sns) {
   currentSns = sns;
   const cfg = SNS_CONFIG[sns];
 
-  // 저장된 코드로 자동 검증
+  // 네비 active
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('nav-' + sns)?.classList.add('active');
+  document.getElementById('mobileTitle').textContent = cfg.name;
+  closeSidebar();
+
+  // 저장된 코드 자동 검증
   const saved = localStorage.getItem(cfg.key);
   const savedVer = localStorage.getItem(cfg.ver);
   if(saved) {
@@ -185,7 +266,7 @@ async function enterSns(sns) {
       });
       const data = await res.json();
       if(data.success && String(data.version) === String(savedVer)) {
-        window.location.href = cfg.page;
+        loadContent(cfg.page);
         return;
       } else {
         localStorage.removeItem(cfg.key);
@@ -194,11 +275,16 @@ async function enterSns(sns) {
     } catch(e) {}
   }
 
-  // 코드 게이트 열기
+  // 코드 게이트
   document.getElementById('gateSnsIcon').textContent = cfg.icon;
   document.getElementById('gateSnsName').textContent = cfg.name;
   document.getElementById('codeGate').classList.add('show');
-  document.getElementById('codeInput').focus();
+  setTimeout(() => document.getElementById('codeInput').focus(), 100);
+}
+
+function loadContent(page) {
+  showScreen('iframeWrap');
+  document.getElementById('contentFrame').src = page;
 }
 
 function closeGate() {
@@ -221,8 +307,7 @@ async function tryEnter() {
   const btn = document.getElementById('gateBtn');
   const err = document.getElementById('gateErr');
   if(!code) return;
-  btn.disabled = true;
-  btn.textContent = '확인 중...';
+  btn.disabled = true; btn.textContent = '확인 중...';
   err.style.display = 'none';
   try {
     const res = await fetch(SERVER_URL + '/api/verify-code', {
@@ -233,25 +318,37 @@ async function tryEnter() {
     if(data.success) {
       localStorage.setItem(cfg.key, code);
       localStorage.setItem(cfg.ver, data.version);
-      window.location.href = cfg.page;
+      document.getElementById('codeGate').classList.remove('show');
+      document.getElementById('codeInput').value = '';
+      loadContent(cfg.page);
     } else {
       err.style.display = 'block';
-      btn.disabled = false;
-      btn.textContent = '입장하기';
+      btn.disabled = false; btn.textContent = '입장하기';
       document.getElementById('codeInput').value = '';
     }
   } catch(e) {
     err.textContent = '❌ 서버 오류. 잠시 후 다시 시도해주세요';
     err.style.display = 'block';
-    btn.disabled = false;
-    btn.textContent = '입장하기';
+    btn.disabled = false; btn.textContent = '입장하기';
   }
 }
 
 function showSoon(icon, name) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('mobileTitle').textContent = name;
   document.getElementById('soonIcon').textContent = icon;
   document.getElementById('soonTitle').textContent = name + ' 준비중';
-  document.getElementById('comingSoon').classList.add('show');
+  showScreen('comingSoonScreen');
+  closeSidebar();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
 }
 </script>
 </body>

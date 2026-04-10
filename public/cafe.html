@@ -111,11 +111,41 @@ footer{border-top:1px solid var(--border);padding:20px 2rem;text-align:center;fo
 @keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:560px){.main{padding:0 1rem 60px}.promo-grid{grid-template-columns:1fr!important}}
 
-
+/* ── 코드 게이트 ── */
+#codeGate{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+.gate-box{width:100%;max-width:400px;text-align:center;}
+.gate-logo{font-family:'Noto Serif KR',serif;font-size:22px;font-weight:700;color:var(--gold);margin-bottom:8px;}
+.gate-sub{font-size:13px;color:var(--text3);margin-bottom:40px;}
+.gate-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:32px 24px;}
+.gate-label{font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.8;}
+.gate-input{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:14px 16px;font-family:monospace;font-size:18px;font-weight:700;color:var(--text);outline:none;text-align:center;letter-spacing:4px;text-transform:uppercase;transition:border-color .2s;margin-bottom:12px;}
+.gate-input:focus{border-color:var(--gold-border);}
+.gate-input::placeholder{font-size:13px;letter-spacing:1px;font-weight:300;font-family:'Noto Sans KR',sans-serif;color:var(--text3);}
+.gate-btn{width:100%;padding:14px;background:var(--gold);color:#0e0e0f;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;}
+.gate-btn:disabled{opacity:.4;cursor:not-allowed;}
+.gate-err{display:none;margin-top:12px;font-size:13px;color:#e57373;padding:10px;background:rgba(229,115,115,0.08);border:1px solid rgba(229,115,115,0.2);border-radius:var(--radius-sm);}
+#mainApp{display:none;}
 </style>
 </head>
 
+<!-- 코드 게이트 -->
+<div id="codeGate">
+  <div class="gate-box">
+    <div class="gate-logo">Zheila AI Auto</div>
+    <div class="gate-sub">AI 카페 글 생성기</div>
+    <div class="gate-card">
+      <div class="gate-label">이용 코드를 입력해주세요<br>코드는 매월 갱신됩니다</div>
+      <input type="text" class="gate-input" id="codeInput" placeholder="코드 입력" maxlength="9"
+        oninput="formatCode(this)" onkeydown="if(event.key==='Enter')tryEnter()"
+        autocomplete="off" autocorrect="off" spellcheck="false" />
+      <button class="gate-btn" id="gateBtn" onclick="tryEnter()">입장하기</button>
+      <div class="gate-err" id="gateErr">❌ 코드가 올바르지 않아요</div>
+    </div>
+  </div>
+</div>
 
+<!-- 메인 앱 -->
+<div id="mainApp">
 <main class="main">
   <div class="hero">
     <div class="hero-badge"><span></span>AI 카페 글 자동 생성</div>
@@ -169,10 +199,7 @@ footer{border-top:1px solid var(--border);padding:20px 2rem;text-align:center;fo
     </div>
   </div>
 
-  <div style="margin-bottom:8px;padding:10px 14px;background:rgba(201,169,110,0.08);border:1px solid rgba(201,169,110,0.2);border-radius:var(--radius-sm);font-size:12px;color:var(--text3);line-height:1.7;">
-  ⚠️ 하루 100회 생성 제한이 있으며, 짧은 시간에 너무 많이 생성하면 일시적으로 제한될 수 있어요
-</div>
-<button class="gen-btn" id="genBtn" onclick="generate()">
+  <button class="gen-btn" id="genBtn" onclick="generate()">
     <div class="spin"></div>
     <span class="btn-txt"></span>
   </button>
@@ -311,10 +338,80 @@ footer{border-top:1px solid var(--border);padding:20px 2rem;text-align:center;fo
   <span style="font-size:11px">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다</span><br>
   <strong style="color:var(--text2)">Zheila AI Auto</strong> — AI 네이버 카페 글 생성기
 </footer>
+</div><!-- /mainApp -->
 
 <script>
 
+// ── 코드 게이트 ──
+const SESSION_KEY = 'zheila_cafe_code';
+const SESSION_VER_KEY = 'zheila_cafe_ver';
+const SERVER_URL = 'https://cafe-draft-production.up.railway.app';
 
+(async function autoVerify() {
+  const saved = localStorage.getItem(SESSION_KEY);
+  const savedVer = localStorage.getItem(SESSION_VER_KEY);
+  if(!saved) return;
+  try {
+    const res = await fetch(SERVER_URL + '/api/verify-code', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({code: saved})
+    });
+    const data = await res.json();
+    if(data.success && String(data.version) === String(savedVer)) {
+      showApp();
+    } else {
+      // 버전 다르면(세션 초기화) 또는 코드 틀리면 삭제
+      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(SESSION_VER_KEY);
+    }
+  } catch(e) {}
+})();
+
+function formatCode(el) {
+  let v = el.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  if(v.length > 4) v = v.slice(0,4) + '-' + v.slice(4,8);
+  el.value = v;
+}
+
+async function tryEnter() {
+  const code = document.getElementById('codeInput').value.trim();
+  const btn = document.getElementById('gateBtn');
+  const err = document.getElementById('gateErr');
+  if(!code) return;
+  btn.disabled = true;
+  btn.textContent = '확인 중...';
+  err.style.display = 'none';
+  try {
+    const res = await fetch(SERVER_URL + '/api/verify-code', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({code})
+    });
+    const data = await res.json();
+    if(data.success) {
+      localStorage.setItem(SESSION_KEY, code);
+      localStorage.setItem(SESSION_VER_KEY, data.version);
+      showApp();
+    } else {
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = '입장하기';
+      document.getElementById('codeInput').value = '';
+      document.getElementById('codeInput').focus();
+    }
+  } catch(e) {
+    err.textContent = '❌ 서버 오류. 잠시 후 다시 시도해주세요';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '입장하기';
+  }
+}
+
+function showApp() {
+  document.getElementById('codeGate').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+}
 
 const DEFAULT_CATS=['맘카페','육아','강아지','고양이','반려동물','재테크','주식','부동산','코인','절약','다이어트','건강','운동','헬스','먹방','여행','맛집','카페','요리','레시피','쇼핑','공동구매','리뷰','뷰티','패션','취업','직장','부업','프리랜서','창업','일상','수다','정보공유','질문','고민상담'];
 const TONES=[{id:'friendly',label:'친근하게',ico:'😊'},{id:'formal',label:'정중하게',ico:'🤝'},{id:'review',label:'후기체',ico:'⭐'},{id:'question',label:'질문체',ico:'🙋'},{id:'info',label:'정보글',ico:'📌'},{id:'emotional',label:'감성적으로',ico:'💕'},{id:'humorous',label:'유머있게',ico:'😄'},{id:'detailed',label:'상세하게',ico:'🔍'}];
@@ -476,17 +573,7 @@ async function regenTitles(){
 
 async function callAPI(prompt){
   const r=await fetch('https://cafe-draft-production.up.railway.app/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'user',content:prompt}],temperature:0.85,max_tokens:Math.round(LEN_TOKENS[parseInt(document.getElementById('lengthSlider').value)-1]*2.5)})});
-  if(!r.ok){
-    const e=await r.json();
-    if(e.error==='cooldown'||e.error==='daily_limit'||e.error==='blocked'){
-      const err = new Error(e.message||'제한됨');
-      err.type = e.error;
-      err.remainSeconds = e.remainSeconds||0;
-      err.violations = e.violations||0;
-      throw err;
-    }
-    throw new Error(e.error?.message||`HTTP ${r.status}`);
-  }
+  if(!r.ok){const e=await r.json();throw new Error(e.error?.message||`HTTP ${r.status}`);}
   const d=await r.json();return d.choices[0].message.content.trim();
 }
 
@@ -552,16 +639,7 @@ async function generate(){
     document.getElementById('cafe-result').style.display='block';
   }catch(e){
     let msg='🔧 점검 중입니다 — 빠른 점검 후 돌아오겠습니다';
-    if(e.type==='blocked'){
-      msg='🚫 ' + (e.message||'접근이 차단됐어요. 관리자에게 문의해주세요.');
-    } else if(e.type==='cooldown'){
-      msg='⏳ ' + (e.message||'잠시 후 다시 시도해주세요');
-      if(e.remainSeconds>0) startCooldown(e.remainSeconds, btn, originalText||'✦ 글 생성하기');
-    } else if(e.type==='daily_limit'){
-      msg='📵 ' + (e.message||'오늘 한도에 도달했어요');
-    } else if(e.message&&e.message.includes('429')){
-      msg='⏳ 요청 한도 초과 — 잠시 후 다시 시도해주세요';
-    }
+    if(e.message.includes('429'))msg='⏳ 요청 한도 초과 — 잠시 후 다시 시도해주세요';
     errEl.textContent=msg;errEl.style.display='block';
     document.getElementById('cafe-loading').style.display='none';
   }
@@ -604,22 +682,6 @@ async function genCafeThumbnail(btn){
 function trackCoupang(){fetch('https://cafe-draft-production.up.railway.app/api/track/coupang',{method:'POST'}).catch(()=>{});}
 
 renderCats();renderTones();renderOpts();updateLen();
-
-function startCooldown(seconds, btn, originalText) {
-  if(seconds <= 0) { btn.disabled=false; btn.textContent=originalText; return; }
-  btn.disabled = true;
-  btn.textContent = `⏳ ${seconds}초 후 재시도 가능`;
-  const timer = setInterval(() => {
-    seconds--;
-    if(seconds <= 0) {
-      clearInterval(timer);
-      btn.disabled = false;
-      btn.textContent = originalText;
-    } else {
-      btn.textContent = `⏳ ${seconds}초 후 재시도 가능`;
-    }
-  }, 1000);
-}
 </script>
 </body>
 </html>

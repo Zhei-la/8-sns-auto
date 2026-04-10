@@ -527,10 +527,30 @@ footer{
 <script>
 
 // ── 코드 게이트 ──
-const SESSION_KEY = 'zheila_blog_verified';
+const SESSION_KEY = 'zheila_blog_code';
+const SESSION_VER_KEY = 'zheila_blog_ver';
 const SERVER_URL = 'https://blog-draft-production.up.railway.app';
 
-if(sessionStorage.getItem(SESSION_KEY) === 'true') showApp();
+(async function autoVerify() {
+  const saved = localStorage.getItem(SESSION_KEY);
+  const savedVer = localStorage.getItem(SESSION_VER_KEY);
+  if(!saved) return;
+  try {
+    const res = await fetch(SERVER_URL + '/api/verify-code', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({code: saved})
+    });
+    const data = await res.json();
+    if(data.success && String(data.version) === String(savedVer)) {
+      showApp();
+    } else {
+      // 버전 다르면(세션 초기화) 또는 코드 틀리면 삭제
+      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(SESSION_VER_KEY);
+    }
+  } catch(e) {}
+})();
 
 function formatCode(el) {
   let v = el.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
@@ -554,7 +574,8 @@ async function tryEnter() {
     });
     const data = await res.json();
     if(data.success) {
-      sessionStorage.setItem(SESSION_KEY, 'true');
+      localStorage.setItem(SESSION_KEY, code);
+      localStorage.setItem(SESSION_VER_KEY, data.version);
       showApp();
     } else {
       err.style.display = 'block';
@@ -1230,5 +1251,4 @@ async function generateAll(){
 </script>
 </body>
 </html>
-
 

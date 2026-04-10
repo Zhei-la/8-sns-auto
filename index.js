@@ -17,6 +17,7 @@ const RATE_LIMIT = 100;
 // ── 코드 + 통계 ──
 let ACCESS_CODE = process.env.ACCESS_CODE || generateCode();
 let codeGeneratedAt = new Date();
+let SESSION_VERSION = 1; // 초기화할 때마다 증가
 const codeUsageLogs = []; // {ip, time}
 const generateLogs = []; // {ip, time} - 글 생성 횟수
 const dailyGenerates = new Map(); // date -> Set of ips (중복 포함 count)
@@ -111,11 +112,10 @@ app.post('/api/verify-code', (req, res) => {
   const { code } = req.body;
   const ip = getClientIP(req);
   if(code && code.trim().toUpperCase() === ACCESS_CODE) {
-    // 코드 사용 기록 (IP 중복 제거)
     const today = getToday();
     const already = codeUsageLogs.find(l => l.ip === ip && l.date === today);
     if(!already) codeUsageLogs.push({ ip, time: getTime(), date: today });
-    res.json({ success: true });
+    res.json({ success: true, version: SESSION_VERSION });
   } else {
     securityLogs.push({ time: getTime(), ip, type: '코드 오류', detail: `잘못된 코드 입력: ${code}` });
     res.json({ success: false });
@@ -195,7 +195,8 @@ app.get('/api/stats', (req, res) => {
     weekly_visitors: weekly,
     current_code: ACCESS_CODE,
     code_generated_at: codeGeneratedAt.toISOString(),
-    status: 'ok'
+    status: 'ok',
+    session_version: SESSION_VERSION
   });
 });
 
@@ -281,7 +282,15 @@ app.get('/api/code/current', adminAuth, (req, res) => {
 app.post('/api/code/regenerate', adminAuth, (req, res) => {
   ACCESS_CODE = generateCode();
   codeGeneratedAt = new Date();
-  res.json({ success: true, code: ACCESS_CODE });
+  SESSION_VERSION++;
+  res.json({ success: true, code: ACCESS_CODE, version: SESSION_VERSION });
+});
+
+// 세션 초기화 (코드는 유지, 버전만 올리기)
+app.post('/api/session/reset', adminAuth, (req, res) => {
+  SESSION_VERSION++;
+  console.log('[세션 초기화] 버전:', SESSION_VERSION);
+  res.json({ success: true, version: SESSION_VERSION });
 });
 
 const PORT = process.env.PORT || 3000;

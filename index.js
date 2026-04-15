@@ -145,6 +145,7 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/blog', (req, res) => res.sendFile(path.join(__dirname, 'public', 'blog.html')));
 app.get('/cafe', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cafe.html')));
+app.get('/threads', (req, res) => res.sendFile(path.join(__dirname, 'public', 'threads.html')));
 app.get('/security', (req, res) => res.sendFile(path.join(__dirname, 'public', 'security_admin.html')));
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -409,3 +410,4 @@ app.post('/api/session/reset', adminAuth, (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+

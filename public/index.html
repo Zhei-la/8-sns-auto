@@ -9,7 +9,7 @@
 <style>
 :root{--bg:#0e0e0f;--bg2:#161618;--bg3:#1e1e21;--bg4:#252528;--gold:#c9a96e;--gold2:#e8c98a;--gold-dim:rgba(201,169,110,0.12);--gold-border:rgba(201,169,110,0.25);--text:#f0ede8;--text2:#9e9b95;--text3:#5a5855;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--radius:14px;--radius-sm:8px;--sidebar-w:220px;}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;display:flex;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;display:flex;overflow-x:hidden;}
 
 /* ── 코드 게이트 ── */
 #codeGate{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px);}
@@ -45,10 +45,10 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 .nav-soon{font-size:9px;color:var(--text3);margin-left:auto;background:var(--bg4);padding:2px 6px;border-radius:10px;}
 
 /* ── 메인 콘텐츠 ── */
-.main-content{margin-left:var(--sidebar-w);flex:1;min-height:100vh;}
+.main-content{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
 
 /* ── 시작 화면 ── */
-#welcomeScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:40px 32px;overflow-y:auto;}
+#welcomeScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:40px 32px;overflow-y:auto;width:100%;}
 .welcome-inner{text-align:center;width:100%;max-width:640px;}
 .welcome-badge{display:inline-flex;align-items:center;gap:6px;background:var(--gold-dim);border:1px solid var(--gold-border);border-radius:99px;padding:5px 14px;font-size:11px;color:var(--gold);font-weight:500;margin-bottom:24px;}
 .welcome-badge span{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse 2s infinite;display:inline-block;}
@@ -92,13 +92,30 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
   }
   .sidebar.open{left:0;}
   .sidebar-overlay.show{display:block;}
-  .main-content{margin-left:0 !important;width:100%;}
+  .main-content{
+    margin-left:0 !important;
+    width:100vw !important;
+    max-width:100vw !important;
+    align-items:center;
+  }
   .mobile-top{display:flex;}
-  #welcomeScreen{padding:20px 16px;align-items:flex-start;justify-content:center;min-height:calc(100vh - 56px);overflow-y:auto;}
-  .welcome-inner{max-width:100%;}
+  #welcomeScreen{
+    padding:20px 16px;
+    align-items:flex-start;
+    justify-content:center;
+    min-height:calc(100vh - 56px);
+    overflow-y:auto;
+    width:100%;
+    box-sizing:border-box;
+  }
+  .welcome-inner{
+    max-width:100%;
+    width:100%;
+    box-sizing:border-box;
+  }
   .welcome-h1{font-size:24px;}
-  #iframeWrap{height:calc(100vh - 56px);}
-  #comingSoonScreen{min-height:calc(100vh - 56px);}
+  #iframeWrap{height:calc(100vh - 56px);width:100%;}
+  #comingSoonScreen{min-height:calc(100vh - 56px);width:100%;}
 }
 
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
@@ -132,7 +149,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
   <div class="mobile-menu-btn" onclick="toggleSidebar()">
     <span></span><span></span><span></span>
   </div>
-  <div class="mobile-title" id="mobileTitle">Zheila AI Auto</div>
+  <div class="mobile-title" id="mobileTitle"></div>
 </div>
 
 <!-- 사이드바 -->
@@ -150,9 +167,8 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
       <span class="nav-icon">☕</span> 네이버 카페
     </div>
     <div class="nav-section">준비중</div>
-    <div class="nav-item disabled" onclick="showSoon('🧵','스레드')">
+    <div class="nav-item" onclick="location.href='/threads'">
       <span class="nav-icon">🧵</span> 스레드
-      <span class="nav-soon">준비중</span>
     </div>
     <div class="nav-item disabled" onclick="showSoon('📸','인스타 릴스')">
       <span class="nav-icon">📸</span> 인스타 릴스
@@ -260,7 +276,7 @@ async function enterSns(sns) {
   // 네비 active
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
   document.getElementById('nav-' + sns)?.classList.add('active');
-  document.getElementById('mobileTitle').textContent = cfg.name;
+  
   closeSidebar();
 
   // 저장된 코드 자동 검증
@@ -343,7 +359,7 @@ async function tryEnter() {
 
 function showSoon(icon, name) {
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-  document.getElementById('mobileTitle').textContent = name;
+  
   document.getElementById('soonIcon').textContent = icon;
   document.getElementById('soonTitle').textContent = name + ' 준비중';
   showScreen('comingSoonScreen');
@@ -361,3 +377,4 @@ function closeSidebar() {
 </script>
 </body>
 </html>
+
